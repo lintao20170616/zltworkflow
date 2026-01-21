@@ -19,6 +19,10 @@ export const useUserStore = defineStore('user', {
     isLoggedIn: false,
   }),
 
+  getters: {
+    user: (state) => state.userInfo,
+  },
+
   actions: {
     setUserInfo(userInfo: UserInfo) {
       this.userInfo = userInfo;

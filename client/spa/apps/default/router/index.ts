@@ -10,16 +10,49 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: () => import('../views/Dashboard.vue'),
+    path: '/layout',
+    component: () => import('../components/Layout.vue'),
+    redirect: '/layout/dashboard',
     meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('../views/Dashboard.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'user-info',
+        name: 'UserInfo',
+        component: () => import('../views/UserInfo.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'chatbot',
+        name: 'ChatBot',
+        component: () => import('../views/ChatBot.vue'),
+        meta: { requiresAuth: true },
+      },
+    ],
   },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAuth) {
+    const userStore = useUserStore();
+    if (!userStore.user) {
+      next({ name: 'Home' });
+    } else {
+      next();
+    }
+  } else {
+    next();
+  }
 });
 
 export default router;

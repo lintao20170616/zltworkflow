@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import service from '@app/service';
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { useUserStore } from '@app/store';
@@ -110,7 +110,8 @@ const handleLogin = async () => {
       if (res && res.userInfo) {
         userStore.login(res.userInfo);
         ElMessage.success('登录成功');
-        router.push('/dashboard');
+        await nextTick();
+        await router.push({ path: '/layout' });
       } else {
         ElMessage.error(res?.message || '登录失败');
       }
@@ -139,7 +140,8 @@ const handleRegister = async () => {
       if (res && res.userInfo) {
         userStore.login(res.userInfo);
         ElMessage.success('注册成功，已自动登录');
-        router.push('/dashboard');
+        await nextTick();
+        await router.push({ path: '/layout' });
       } else {
         ElMessage.error(res?.message || '注册失败');
       }

@@ -4,7 +4,7 @@ module.exports = (appInfo) => {
   const config = {};
   config.session = {
     key: 'EGG_SESS',
-    maxAge: 10 * 1000,
+    maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true,
     encrypt: true,
     renew: false,

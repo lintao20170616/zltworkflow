@@ -1,0 +1,23 @@
+[
+  {
+    "id": "dashboard",
+    "title": "仪表盘",
+    "icon": "Odometer",
+    "path": "/layout/dashboard",
+    "name": "Dashboard"
+  },
+  {
+    "id": "user",
+    "title": "用户信息",
+    "icon": "User",
+    "path": "/layout/user-info",
+    "name": "UserInfo"
+  },
+  {
+    "id": "chatbot",
+    "title": "聊天机器人",
+    "icon": "ChatLineRound",
+    "path": "/layout/chatbot",
+    "name": "ChatBot"
+  }
+]
