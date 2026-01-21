@@ -1,0 +1,3 @@
+**/app/public
+package-lock.json
+*.min.*

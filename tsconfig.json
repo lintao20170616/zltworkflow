@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./client/spa/apps/default/src/*"],
+      "@spa/*": ["./client/spa/*"],
+      "@app/*": ["./client/spa/apps/default/*"]
+    }
+  },
+  "include": ["client/spa/**/*.ts", "client/spa/**/*.tsx", "client/spa/**/*.vue"],
+  "exclude": ["app/**", "config/**", "lib/**", "node_modules/**"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

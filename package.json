@@ -1,0 +1,101 @@
+{
+  "name": "zltadminweb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:server": "egg-bin dev --port 9090",
+    "dev:client": "vite",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build:client": "vite build",
+    "preview:client": "vite preview",
+    "prepare": "husky install",
+    "type-check": "vue-tsc --noEmit",
+    "eslint": "eslint --fix --cache --ext .js,.ts,.vue,.html .",
+    "stylelint": "sh scripts/check-node-version.sh && stylelint **/*.{css,less,scss,vue,html} *.{css,less,scss,vue,html} --fix --cache --quiet",
+    "prettier": "prettier **/*.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} *.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} --write --cache --no-error-on-unmatched-pattern",
+    "lint-staged": "lint-staged -p false"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lintao20170616/zltadminweb.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lintao20170616/zltadminweb/issues"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint-staged",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "lint-staged": {
+    "*.{js,ts,vue,html}": "eslint --fix --cache --ext .js,.ts,.vue,.html",
+    "*.{css,less,scss,vue,html}": "stylelint --fix --cache",
+    "*.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml}": "prettier --write --cache"
+  },
+  "homepage": "https://github.com/lintao20170616/zltadminweb#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^17.8.1",
+    "@commitlint/config-conventional": "^17.8.1",
+    "@html-eslint/eslint-plugin": "^0.47.0",
+    "@html-eslint/parser": "^0.47.0",
+    "@types/lodash": "^4.17.13",
+    "@types/node": "^25.0.3",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/tsconfig": "^0.5.1",
+    "concurrently": "^8.2.2",
+    "egg-bin": "^6.13.0",
+    "eslint": "^8.57.0",
+    "eslint-config-egg": "^13.1.0",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-html": "^8.1.3",
+    "eslint-plugin-vue": "^9.33.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^14.0.1",
+    "postcss-html": "^1.8.0",
+    "postcss-less": "^6.0.0",
+    "postcss-scss": "^4.0.9",
+    "prettier": "^2.8.8",
+    "stylelint": "^16.23.0",
+    "stylelint-config-css-modules": "4.3.0",
+    "stylelint-config-html": "^1.1.0",
+    "stylelint-config-recommended-vue": "^1.6.1",
+    "stylelint-config-standard": "^39.0.1",
+    "stylelint-config-standard-less": "^2.0.0",
+    "stylelint-config-standard-scss": "^11.1.0",
+    "stylelint-scss": "^5.3.2",
+    "typescript": "^5.4.5",
+    "vite": "5.4.21",
+    "vue-tsc": "^2.1.10"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "bcryptjs": "^2.4.3",
+    "cross-env": "^10.1.0",
+    "dayjs": "^1.11.13",
+    "egg": "3.32.0",
+    "egg-redis": "^2.6.1",
+    "egg-sequelize": "6.0.0",
+    "egg-session-redis": "^2.1.0",
+    "egg-view-nunjucks": "^2.3.0",
+    "element-plus": "^2.13.0",
+    "js-cookies": "^1.0.4",
+    "lodash": "^4.17.21",
+    "mysql2": "3.16.0",
+    "pinia": "^3.0.2",
+    "sequelize": "6.37.1",
+    "umi-request": "^1.4.0",
+    "vue": "^3.5.26",
+    "vue-router": "^4.4.5"
+  }
+}

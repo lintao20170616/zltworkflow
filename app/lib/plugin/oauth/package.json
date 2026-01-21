@@ -1,0 +1,8 @@
+{
+  "name": "egg-oauth",
+  "version": "1.0.0",
+  "description": "OAuth 认证插件",
+  "eggPlugin": {
+    "name": "oauth"
+  }
+}

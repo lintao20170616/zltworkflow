@@ -1,0 +1,76 @@
+---
+description: "前端团队Vue开发规范，适用于Vue 2/3项目开发"
+alwaysApply: true
+tags: ["前端", "Vue", "组件开发"]
+version: "1.0.0"
+---
+
+# 前端团队 - Vue开发规范
+
+## AI助手行为规范
+1. 优先使用Composition API (Vue 3)
+2. 使用TypeScript增强类型安全
+3. 生成的组件包含完整的props定义
+4. 使用响应式数据管理
+5. 避免过度使用全局状态
+6. 生成可复用的组合函数
+7. 考虑组件的性能优化
+8. 生成完整的错误处理
+
+## Vue编码规范
+1. 使用PascalCase命名组件
+2. 使用camelCase命名props和data
+3. 使用kebab-case命名组件标签
+4. 使用完整的生命周期钩子名称
+5. 在template中使用简洁的表达式
+6. 在script中使用详细的逻辑
+7. 组件文件以.vue结尾
+
+## Composition API规范
+1. 使用<script setup>语法糖
+2. 使用ref()定义响应式数据
+3. 使用computed()定义计算属性
+4. 使用watch()监听数据变化
+5. 使用reactive()定义对象响应式
+6. 组合函数以use开头命名
+7. 返回响应式数据和方法
+
+## 组件设计规范
+1. 单文件组件结构清晰
+2. 使用props进行数据传递
+3. 使用emit进行事件通信
+4. 使用slots进行内容分发
+5. 组件职责单一明确
+6. 使用provide/inject跨层传递
+
+## 状态管理规范
+1. 简单状态使用reactive/computed
+2. 复杂状态使用Pinia/Vuex
+3. 使用store进行全局状态管理
+4. 异步操作使用actions
+5. 状态变更使用mutations
+6. 使用getters计算派生状态
+
+## 样式规范
+1. 使用scoped样式避免污染
+2. 使用CSS Modules进行样式隔离
+3. 使用BEM命名规范
+4. 使用CSS变量管理主题
+5. 响应式设计考虑移动端
+6. 使用CSS-in-JS库统一管理
+
+## 测试规范
+1. 使用Vitest进行单元测试
+2. 使用@vue/test-utils测试组件
+3. 测试组件的props和events
+4. 测试组合函数的逻辑
+5. 使用jsdom模拟DOM环境
+6. 达到70%以上测试覆盖率
+
+## 性能优化规范
+1. 使用v-memo缓存计算结果
+2. 使用v-if/v-show条件渲染
+3. 使用keep-alive缓存组件
+4. 异步组件懒加载
+5. 使用v-once优化静态内容
+6. 合理使用事件修饰符

@@ -1,0 +1,53 @@
+---
+description: "前端团队React开发规范，适用于React项目开发"
+alwaysApply: false
+tags: ["前端", "React", "组件开发"]
+version: "2.1.0"
+---
+
+# 前端团队 - React开发规范
+
+## AI助手行为规范
+1. 优先使用函数组件和Hooks
+2. 推荐使用TypeScript
+3. 生成的组件包含PropTypes或TypeScript类型定义
+4. 简单状态使用useState
+5. 复杂状态推荐使用Zustand或Redux Toolkit
+6. 避免过度使用Context
+7. 使用React.memo避免不必要的重渲染
+8. 合理使用useMemo和useCallback
+9. 建议使用React.lazy进行代码分割
+
+## React编码规范
+1. 使用函数组件和Hooks替代类组件
+2. 组件名使用PascalCase命名
+3. Props使用interface或type定义类型
+4. 使用解构赋值获取props和state
+5. 事件处理函数以handle开头
+6. 使用自定义Hooks封装可复用逻辑
+7. 自定义Hooks以use开头
+8. Hooks调用必须在组件顶部
+9. 避免在循环、条件或嵌套函数中调用Hooks
+
+## 文件组织结构
+1. components/ - 可复用组件
+2. pages/ - 页面组件
+3. hooks/ - 自定义Hooks
+4. utils/ - 工具函数
+5. types/ - TypeScript类型定义
+6. styles/ - 样式文件
+
+## 团队约定
+1. 组件有适当的类型定义
+2. 使用错误边界处理错误
+3. 有适当的单元测试
+4. 遵循设计系统规范
+5. Git提交使用规范格式：`feat: 添加用户登录组件`
+
+## 工具链推荐
+1. ESLint + Prettier 代码规范
+2. Husky + lint-staged 提交前检查
+3. Storybook 组件文档
+4. Cypress 端到端测试
+5. Vite 开发服务器
+6. esbuild 快速构建

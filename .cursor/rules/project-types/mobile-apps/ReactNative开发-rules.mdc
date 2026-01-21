@@ -1,0 +1,90 @@
+---
+description: "移动应用React Native开发规范，适用于iOS和Android跨平台开发"
+alwaysApply: false
+tags: ["移动应用", "React Native", "跨平台"]
+version: "1.0.0"
+---
+
+# 移动应用 - React Native开发规范
+
+## AI助手行为规范
+1. 优先使用React Native最新特性
+2. 使用TypeScript增强类型安全
+3. 生成跨平台的通用组件
+4. 考虑iOS和Android差异
+5. 使用React Navigation进行导航
+6. 生成可复用的自定义Hook
+7. 考虑设备性能和内存使用
+8. 生成完整的错误边界
+
+## React Native编码规范
+1. 使用PascalCase命名组件
+2. 使用camelCase命名函数和变量
+3. 使用Platform.select处理平台差异
+4. 使用Dimensions获取设备信息
+5. 避免直接使用像素值
+6. 使用StyleSheet.create管理样式
+7. 使用keyExtractor优化列表渲染
+
+## 组件设计规范
+1. 使用函数式组件和Hooks
+2. 使用memo优化组件重渲染
+3. 使用forwardRef处理ref传递
+4. 使用React.memo缓存组件
+5. 组件职责单一明确
+6. 使用自定义Hook封装逻辑
+
+## 状态管理规范
+1. 简单状态使用useState
+2. 复杂状态使用Context + useReducer
+3. 全局状态使用Redux Toolkit
+4. 异步操作使用Redux Thunk/Saga
+5. 使用Redux Persist持久化状态
+6. 状态变更使用actions
+
+## 导航规范
+1. 使用React Navigation v6
+2. 使用Stack Navigator主导航
+3. 使用Tab Navigator底部标签
+4. 使用Drawer Navigator侧边栏
+5. 使用Deep Linking处理URL
+6. 使用Navigation Container包装应用
+
+## 样式规范
+1. 使用StyleSheet避免内联样式
+2. 使用Platform.select平台样式
+3. 使用Dimensions适配屏幕尺寸
+4. 使用flexbox布局系统
+5. 使用主题系统管理颜色
+6. 考虑暗色模式适配
+
+## 原生模块规范
+1. 使用React Native内置模块
+2. 谨慎使用第三方原生库
+3. 编写桥接模块连接原生代码
+4. 处理权限请求和配置
+5. 考虑平台特定的实现差异
+
+## 测试规范
+1. 使用Jest进行单元测试
+2. 使用React Native Testing Library
+3. 使用Detox进行端到端测试
+4. 测试组件渲染和交互
+5. 测试异步操作和状态变更
+6. 使用mock模拟外部依赖
+
+## 性能优化规范
+1. 使用FlatList优化长列表
+2. 使用memo和useMemo缓存
+3. 使用useCallback优化函数引用
+4. 避免不必要的渲染
+5. 使用Hermes引擎提升性能
+6. 代码分割和懒加载
+
+## 发布规范
+1. 配置正确的bundle identifier
+2. 设置适当的版本号和构建号
+3. 配置应用图标和启动图
+4. 处理应用权限配置
+5. 配置推送通知服务
+6. 准备应用商店截图和描述
