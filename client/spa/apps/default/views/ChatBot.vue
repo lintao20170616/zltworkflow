@@ -1,37 +1,58 @@
 <template>
   <div class="chatbot">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>聊天机器人</span>
-          <div class="header-actions">
-            <el-button type="primary" @click="showNewConversationDialog = true">新建会话</el-button>
+    <el-container class="chatbot-container">
+      <el-aside width="250px" class="conversation-sidebar">
+        <div class="sidebar-header">
+          <el-button type="primary" size="small" @click="showNewConversationDialog = true">新建会话</el-button>
+        </div>
+        <div v-loading="loadingConversations" class="conversation-list">
+          <div
+            v-for="conversation in conversations"
+            :key="conversation.id"
+            :class="['conversation-item', { active: currentConversationId === conversation.id }]"
+            @click="handleSelectConversation(conversation.id)"
+          >
+            <div class="conversation-content">
+              <div class="conversation-title">{{ conversation.title || '新对话' }}</div>
+              <div class="conversation-time">{{ formatDate(conversation.updatedAt) }}</div>
+            </div>
+            <el-button type="danger" :icon="Delete" size="small" text @click.stop="handleDeleteConversation(conversation.id)" />
           </div>
+          <el-empty v-if="!loadingConversations && conversations.length === 0" description="暂无会话" :image-size="80" />
         </div>
-      </template>
-      <div class="chat-container">
-        <div v-if="!currentConversationId" class="empty-state">
-          <el-empty description="请先创建一个新会话" />
-        </div>
-        <template v-else>
-          <div ref="messagesRef" class="chat-messages">
-            <div v-for="(message, index) in messages" :key="message.id || index" :class="['message', message.role]">
-              <div class="message-content">
-                <div class="message-text">{{ message.content }}</div>
-                <div class="message-time">{{ formatTime(message.createdAt) }}</div>
+      </el-aside>
+      <el-main class="chat-main">
+        <el-card class="chat-card">
+          <template #header>
+            <div class="card-header">
+              <span>{{ currentConversationTitle || '聊天机器人' }}</span>
+            </div>
+          </template>
+          <div class="chat-container">
+            <div v-if="!currentConversationId" class="empty-state">
+              <el-empty description="请先选择一个会话或创建新会话" />
+            </div>
+            <template v-else>
+              <div ref="messagesRef" v-loading="loadingMessages" class="chat-messages">
+                <div v-for="(message, index) in messages" :key="message.id || index" :class="['message', message.role]">
+                  <div class="message-content">
+                    <div class="message-text">{{ message.content }}</div>
+                    <div class="message-time">{{ formatTime(message.createdAt) }}</div>
+                  </div>
+                </div>
               </div>
-            </div>
+              <div class="chat-input">
+                <el-input v-model="inputMessage" type="textarea" :rows="3" placeholder="请输入消息..." @keyup.enter.ctrl="sendMessage" />
+                <div class="input-actions">
+                  <el-button type="primary" :loading="sending" @click="sendMessage"> 发送 </el-button>
+                  <el-button @click="clearMessages">清空</el-button>
+                </div>
+              </div>
+            </template>
           </div>
-          <div class="chat-input">
-            <el-input v-model="inputMessage" type="textarea" :rows="3" placeholder="请输入消息..." @keyup.enter.ctrl="sendMessage" />
-            <div class="input-actions">
-              <el-button type="primary" :loading="sending" @click="sendMessage"> 发送 </el-button>
-              <el-button @click="clearMessages">清空</el-button>
-            </div>
-          </div>
-        </template>
-      </div>
-    </el-card>
+        </el-card>
+      </el-main>
+    </el-container>
 
     <el-dialog v-model="showNewConversationDialog" title="新建会话" width="400px">
       <el-form :model="newConversationForm" label-width="80px">
@@ -48,23 +69,73 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ref, nextTick, onMounted, computed } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { Delete } from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
-import { sendMessage as sendChatMessage, createConversation, type ChatMessage } from '../service/chatbot';
+import {
+  sendMessage as sendChatMessage,
+  createConversation,
+  getConversations,
+  getMessages,
+  deleteConversation,
+  type ChatMessage,
+  type Conversation,
+} from '../service/chatbot';
 import { useUserStore } from '../store';
 
 const userStore = useUserStore();
 const messages = ref<ChatMessage[]>([]);
+const conversations = ref<Conversation[]>([]);
 const inputMessage = ref('');
 const sending = ref(false);
 const creating = ref(false);
+const loadingConversations = ref(false);
+const loadingMessages = ref(false);
 const messagesRef = ref<HTMLElement>();
 const currentConversationId = ref<number | undefined>();
 const showNewConversationDialog = ref(false);
 const newConversationForm = ref({
   title: '',
 });
+
+const currentConversationTitle = computed(() => {
+  const conversation = conversations.value.find((c) => c.id === currentConversationId.value);
+  return conversation?.title || '新对话';
+});
+
+const loadConversations = async () => {
+  if (!userStore.user?.id) return;
+
+  loadingConversations.value = true;
+  try {
+    conversations.value = await getConversations();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '加载会话列表失败');
+  } finally {
+    loadingConversations.value = false;
+  }
+};
+
+const loadMessages = async (conversationId: number) => {
+  loadingMessages.value = true;
+  try {
+    const messageList = await getMessages(conversationId);
+    messages.value = messageList;
+    await scrollToBottom();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '加载消息失败');
+  } finally {
+    loadingMessages.value = false;
+  }
+};
+
+const handleSelectConversation = async (conversationId: number) => {
+  if (currentConversationId.value === conversationId) return;
+
+  currentConversationId.value = conversationId;
+  await loadMessages(conversationId);
+};
 
 const handleCreateConversation = async () => {
   if (!userStore.user?.id) {
@@ -78,6 +149,7 @@ const handleCreateConversation = async () => {
       title: newConversationForm.value.title || undefined,
     });
 
+    await loadConversations();
     currentConversationId.value = conversation.id;
     messages.value = [];
     showNewConversationDialog.value = false;
@@ -99,9 +171,33 @@ const handleCreateConversation = async () => {
   }
 };
 
+const handleDeleteConversation = async (conversationId: number) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这个会话吗？删除后无法恢复。', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+
+    await deleteConversation(conversationId);
+    await loadConversations();
+
+    if (currentConversationId.value === conversationId) {
+      currentConversationId.value = undefined;
+      messages.value = [];
+    }
+
+    ElMessage.success('删除成功');
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error instanceof Error ? error.message : '删除会话失败');
+    }
+  }
+};
+
 const sendMessage = async () => {
   if (!currentConversationId.value) {
-    ElMessage.warning('请先创建一个新会话');
+    ElMessage.warning('请先选择一个会话');
     return;
   }
 
@@ -135,6 +231,7 @@ const sendMessage = async () => {
     });
 
     await scrollToBottom();
+    await loadConversations();
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '发送消息失败');
   } finally {
@@ -157,6 +254,24 @@ const scrollToBottom = async () => {
 const formatTime = (dateString: string) => {
   return dayjs(dateString).format('HH:mm:ss');
 };
+
+const formatDate = (dateString: string) => {
+  const date = dayjs(dateString);
+  const now = dayjs();
+  if (date.isSame(now, 'day')) {
+    return date.format('HH:mm');
+  } else if (date.isSame(now.subtract(1, 'day'), 'day')) {
+    return '昨天';
+  } else if (date.isSame(now, 'year')) {
+    return date.format('MM-DD');
+  } else {
+    return date.format('YYYY-MM-DD');
+  }
+};
+
+onMounted(() => {
+  loadConversations();
+});
 </script>
 
 <style scoped>
@@ -164,15 +279,86 @@ const formatTime = (dateString: string) => {
   height: 100%;
 }
 
+.chatbot-container {
+  height: 100%;
+}
+
+.conversation-sidebar {
+  background-color: #f5f5f5;
+  border-right: 1px solid #e4e7ed;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.conversation-item:hover {
+  background-color: #e4e7ed;
+}
+
+.conversation-item.active {
+  background-color: #409eff;
+  color: #fff;
+}
+
+.conversation-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.conversation-title {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+
+.conversation-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.conversation-item.active .conversation-time {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.chat-main {
+  padding: 0;
+  background-color: #fff;
+}
+
+.chat-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
 }
 
 .chat-container {
