@@ -183,6 +183,48 @@ class ChatbotController extends Controller {
       ctx.status = 500;
     }
   }
+
+  async testOllama() {
+    const { ctx } = this;
+    try {
+      const { message = '你好' } = ctx.request.query;
+
+      ctx.logger.info('[ChatbotController] 开始测试 Ollama 插件', {
+        message,
+        hasOllama: !!ctx.app.ollama,
+        configEnabled: ctx.app.config.ollama?.enabled,
+      });
+
+      const testMessages = [
+        {
+          role: 'user',
+          content: message,
+        },
+      ];
+
+      const response = await ctx.service.ollama.ollamaChat(testMessages, {
+        temperature: 0.7,
+        maxTokens: 2000,
+      });
+
+      ctx.body = {
+        code: 0,
+        message: '测试成功',
+        data: response.content,
+      };
+    } catch (error) {
+      ctx.logger.error('[ChatbotController] testOllama error:', error);
+      ctx.body = {
+        code: 500,
+        message: `测试失败: ${error.message}`,
+        data: {
+          error: error.message,
+          stack: error.stack,
+        },
+      };
+      ctx.status = 500;
+    }
+  }
 }
 
 module.exports = ChatbotController;

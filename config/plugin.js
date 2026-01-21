@@ -21,4 +21,8 @@ module.exports = {
     enable: true,
     package: 'egg-session-redis',
   },
+  ollama: {
+    enable: true,
+    path: path.join(__dirname, '../app/lib/plugin/ollama'),
+  },
 };

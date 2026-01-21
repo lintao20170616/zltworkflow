@@ -73,51 +73,76 @@ class ChatbotService extends Service {
 
   async sendMessage(conversationId, userId, content) {
     const { ctx } = this;
+
+    if (!conversationId || !userId || !content?.trim()) {
+      return { success: false, message: '参数不完整' };
+    }
+
+    const transaction = await ctx.model.transaction();
+
     try {
-      if (!conversationId) {
-        return { success: false, message: '会话ID不能为空' };
-      }
-
-      if (!userId) {
-        return { success: false, message: '用户ID不能为空' };
-      }
-
-      if (!content || !content.trim()) {
-        return { success: false, message: '消息内容不能为空' };
-      }
-
       const conversation = await ctx.model.Conversation.findOne({
         where: { id: Number(conversationId), userId: Number(userId) },
+        transaction,
       });
 
       if (!conversation) {
-        ctx.logger.warn('[ChatbotService] sendMessage: 会话不存在', {
-          conversationId: Number(conversationId),
-          userId: Number(userId),
-        });
+        await transaction.rollback();
         return { success: false, message: '会话不存在或无权访问' };
       }
 
-      const userMessage = await ctx.model.Message.create({
-        conversationId: Number(conversationId),
-        role: 'user',
-        content: content.trim(),
-      });
+      const userMessage = await ctx.model.Message.create(
+        {
+          conversationId: Number(conversationId),
+          role: 'user',
+          content: content.trim(),
+        },
+        { transaction },
+      );
 
-      await conversation.update({ updatedAt: new Date() });
+      let botResponse;
+      if (ctx.app.ollama && ctx.app.config.ollama?.enabled) {
+        try {
+          const response = await ctx.service.ollama.ollamaChat([{ role: 'user', content: content.trim() }], {
+            temperature: 0.7,
+            maxTokens: 2000,
+          });
 
-      const botResponse = await this.generateBotResponse(conversationId, content);
+          if (!response || !response.content) {
+            throw new Error(`Ollama 响应格式错误：${JSON.stringify(response)}`);
+          }
 
-      const botMessage = await ctx.model.Message.create({
-        conversationId: Number(conversationId),
-        role: 'bot',
-        content: botResponse,
-      });
-
-      if (!conversation.title || conversation.title === '新对话') {
-        const title = content.length > 30 ? content.substring(0, 30) + '...' : content;
-        await conversation.update({ title });
+          botResponse = response.content;
+        } catch (error) {
+          ctx.logger.error('[ChatbotService] Ollama 调用失败，使用降级回复', {
+            conversationId,
+            error: error.message,
+            errorName: error.name,
+            errorCode: error.code,
+          });
+          botResponse = await this.generateBotResponse(conversationId, content);
+        }
+      } else {
+        botResponse = await this.generateBotResponse(conversationId, content);
       }
+
+      const botMessage = await ctx.model.Message.create(
+        {
+          conversationId: Number(conversationId),
+          role: 'bot',
+          content: botResponse,
+        },
+        { transaction },
+      );
+
+      const updateData = { updatedAt: new Date() };
+      if (!conversation.title || conversation.title === '新对话') {
+        updateData.title = content.length > 30 ? content.substring(0, 30) + '...' : content;
+      }
+
+      await conversation.update(updateData, { transaction });
+
+      await transaction.commit();
 
       return {
         success: true,
@@ -138,13 +163,13 @@ class ChatbotService extends Service {
         },
       };
     } catch (error) {
+      await transaction.rollback();
       ctx.logger.error('[ChatbotService] sendMessage error:', error);
       ctx.logger.error('[ChatbotService] sendMessage error details:', {
         message: error.message,
         stack: error.stack,
         conversationId,
         userId,
-        contentLength: content?.length,
       });
       return { success: false, message: `发送消息失败: ${error.message}` };
     }
@@ -155,20 +180,14 @@ class ChatbotService extends Service {
     try {
       const recentMessages = await ctx.model.Message.findAll({
         where: { conversationId },
-        order: [['createdAt', 'DESC']],
-        limit: 10,
+        order: [['createdAt', 'ASC']],
+        limit: 20,
       });
 
-      const context = recentMessages
-        .reverse()
-        .map((msg) => `${msg.role === 'user' ? '用户' : '助手'}: ${msg.content}`)
-        .join('\n');
-
-      const response = this.getSimpleResponse(userMessage, context);
-
-      return response;
+      const context = recentMessages.map((msg) => `${msg.role === 'user' ? '用户' : '助手'}: ${msg.content}`).join('\n');
+      return this.getSimpleResponse(userMessage, context);
     } catch (error) {
-      ctx.logger.error('[ChatbotService] generateBotResponse error:', error);
+      ctx.logger.error('[ChatbotService] generateBotResponse error:', error.message);
       return '抱歉，我现在无法回复，请稍后再试。';
     }
   }

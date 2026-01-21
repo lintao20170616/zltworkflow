@@ -33,7 +33,6 @@ module.exports = (app) => {
         allowNull: false,
         field: 'created_at',
         comment: '创建时间',
-        defaultValue: app.Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     },
     {

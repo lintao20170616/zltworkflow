@@ -49,3 +49,7 @@ export const createConversation = async (data?: CreateConversationRequest): Prom
 export const deleteConversation = async (conversationId: number): Promise<void> => {
   return http.api.delete(`/chatbot/conversations/${conversationId}`);
 };
+
+export const testOllama = async (params: { message: string }): Promise<string> => {
+  return http.api.get('/chatbot/test-ollama', { params });
+};

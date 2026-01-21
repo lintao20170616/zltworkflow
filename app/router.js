@@ -13,6 +13,7 @@ module.exports = (app) => {
   router.get('/api/chatbot/messages/:conversationId', controller.chatbot.getMessages);
   router.post('/api/chatbot/conversations', controller.chatbot.createConversation);
   router.delete('/api/chatbot/conversations/:id', controller.chatbot.deleteConversation);
+  router.get('/api/chatbot/test-ollama', controller.chatbot.testOllama);
 
   router.get('/error', controller.pages.errorPage);
   // 通用匹配，渲染页面

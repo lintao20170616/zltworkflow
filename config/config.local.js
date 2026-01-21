@@ -34,6 +34,11 @@ module.exports = (appInfo) => {
     // 是否输出到文件
     file: true,
   };
-
+  config.ollama = {
+    baseUrl: 'http://127.0.0.1:11434',
+    model: 'deepseek-r1:7b',
+    timeout: 120000,
+    enabled: true,
+  };
   return config;
 };

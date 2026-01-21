@@ -13,7 +13,7 @@ module.exports = (appInfo) => {
 
   config.oauth = {
     enable: true,
-    whitelist: ['/api/user/login', '/api/user/register', '/api/user/logout'],
+    whitelist: ['/api/user/login', '/api/user/register', '/api/user/logout', '/api/chatbot/test-ollama'],
     userKey: 'user',
   };
 

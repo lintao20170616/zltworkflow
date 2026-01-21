@@ -46,6 +46,7 @@
                 <div class="input-actions">
                   <el-button type="primary" :loading="sending" @click="sendMessage"> 发送 </el-button>
                   <el-button @click="clearMessages">清空</el-button>
+                  <el-button type="info" :loading="testingOllama" @click="handleTestOllama">测试 Ollama</el-button>
                 </div>
               </div>
             </template>
@@ -79,6 +80,7 @@ import {
   getConversations,
   getMessages,
   deleteConversation,
+  testOllama,
   type ChatMessage,
   type Conversation,
 } from '../service/chatbot';
@@ -92,6 +94,7 @@ const sending = ref(false);
 const creating = ref(false);
 const loadingConversations = ref(false);
 const loadingMessages = ref(false);
+const testingOllama = ref(false);
 const messagesRef = ref<HTMLElement>();
 const currentConversationId = ref<number | undefined>();
 const showNewConversationDialog = ref(false);
@@ -242,6 +245,38 @@ const sendMessage = async () => {
 const clearMessages = () => {
   messages.value = [];
   ElMessage.success('消息已清空');
+};
+
+const handleTestOllama = async () => {
+  const testMessage = inputMessage.value.trim() || '介绍一下自己';
+  testingOllama.value = true;
+
+  try {
+    console.log('=== Ollama 测试开始 ===');
+    console.log('请求消息:', testMessage);
+    console.log('请求时间:', new Date().toLocaleString());
+
+    const response = await testOllama({ message: testMessage });
+
+    console.log('=== Ollama 测试成功 ===');
+    console.log('返回数据类型:', typeof response);
+    console.log('返回数据内容:', response);
+    console.log('数据长度:', typeof response === 'string' ? response.length : 'N/A');
+    console.log('==================');
+
+    ElMessage.success('测试完成，请查看浏览器控制台输出');
+  } catch (error) {
+    console.error('=== Ollama 测试失败 ===');
+    console.error('错误类型:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('错误信息:', error instanceof Error ? error.message : String(error));
+    if (error instanceof Error && error.stack) {
+      console.error('错误堆栈:', error.stack);
+    }
+    console.error('==================');
+    ElMessage.error(error instanceof Error ? error.message : '测试失败');
+  } finally {
+    testingOllama.value = false;
+  }
 };
 
 const scrollToBottom = async () => {

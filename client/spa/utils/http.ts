@@ -5,8 +5,6 @@ import router from '../apps/default/router';
 import { useUserStore } from '../apps/default/store/user';
 import type { ApiResponse } from '../apps/default/types';
 
-
-
 type HttpStatusCode = 200 | 201 | 202 | 204 | 400 | 401 | 403 | 404 | 406 | 408 | 410 | 422 | 500 | 502 | 503 | 504;
 
 const HTTP_STATUS_MESSAGES: Readonly<Record<HttpStatusCode, string>> = {
@@ -32,28 +30,28 @@ const getMessage = (status: number): string => {
   return HTTP_STATUS_MESSAGES[status as HttpStatusCode] ?? '未知错误';
 };
 
-let logoutCounter = 0;
+// let logoutCounter = 0;
 
 const getCsrfToken = (): string => {
   const name = 'csrfToken=';
   const decodedCookie = decodeURIComponent(document.cookie ?? '');
   const cookies = decodedCookie.split(';');
-  
+
   for (const cookie of cookies) {
     const trimmed = cookie.trim();
     if (trimmed.startsWith(name)) {
       return trimmed.substring(name.length);
     }
   }
-  
+
   return '';
 };
 
 const requestInterceptor = async (url: string, options: Record<string, unknown>) => {
   console.log('requestInterceptor', url, options);
-  
+
   const modifiedOptions: Record<string, unknown> = { ...options };
-  
+
   if (modifiedOptions.data instanceof FormData) {
     if (modifiedOptions.headers && typeof modifiedOptions.headers === 'object') {
       const headers = { ...(modifiedOptions.headers as Record<string, string>) };
@@ -61,14 +59,14 @@ const requestInterceptor = async (url: string, options: Record<string, unknown>)
       modifiedOptions.headers = headers;
     }
   }
-  
+
   if (!modifiedOptions.headers || typeof modifiedOptions.headers !== 'object') {
     modifiedOptions.headers = {};
   }
-  
+
   const headers = modifiedOptions.headers as Record<string, string>;
   headers['X-CSRF-Token'] = (Cookies.getItem('csrfToken') as string | null) ?? '';
-  
+
   return { url, options: modifiedOptions as RequestInit };
 };
 
@@ -96,12 +94,7 @@ interface ErrorWithResponse {
 }
 
 const isErrorWithResponse = (error: unknown): error is ErrorWithResponse => {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof (error as ErrorWithResponse).response === 'object'
-  );
+  return typeof error === 'object' && error !== null && 'response' in error && typeof (error as ErrorWithResponse).response === 'object';
 };
 
 const errorHandler = async (error: unknown): Promise<never> => {
@@ -110,14 +103,14 @@ const errorHandler = async (error: unknown): Promise<never> => {
     console.error(message);
     throw new Error(message);
   }
-  
+
   const { response } = error;
   if (!response) {
     const message = error.message ?? String(error);
     console.error(message);
     throw new Error(message);
   }
-  
+
   const { status } = response;
 
   if (status === 401) {
@@ -126,7 +119,7 @@ const errorHandler = async (error: unknown): Promise<never> => {
     router.push('/');
     return Promise.reject(new Error('登录信息已过期，请重新登录！'));
   }
-  
+
   let errorMessage: string;
   try {
     const data: ApiResponse<unknown> = await response.clone().json();
@@ -134,7 +127,7 @@ const errorHandler = async (error: unknown): Promise<never> => {
   } catch {
     errorMessage = getMessage(status);
   }
-  
+
   console.error(errorMessage);
   throw new Error(errorMessage);
 };
@@ -159,11 +152,11 @@ const getClient = (oapiName?: string): RequestMethod => {
     errorHandler,
     cancelToken: undefined,
   });
-  
+
   // @ts-expect-error - umi-request 拦截器类型定义不够灵活
   client.interceptors.request.use(requestInterceptor, { global: false });
   client.interceptors.response.use(responseInterceptor, { global: false });
-  
+
   return client;
 };
 

@@ -1,0 +1,8 @@
+{
+  "name": "egg-ollama",
+  "version": "1.0.0",
+  "description": "Ollama AI 本地模型插件",
+  "eggPlugin": {
+    "name": "ollama"
+  }
+}
