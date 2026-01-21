@@ -6,6 +6,14 @@ module.exports = (app) => {
   router.get('/api/user/info', controller.user.getCurrentUser);
   router.post('/api/user/logout', controller.user.logout);
   router.get('/api/user/list', controller.user.getUserList);
+
+  // 聊天机器人接口
+  router.post('/api/chatbot/send', controller.chatbot.sendMessage);
+  router.get('/api/chatbot/conversations', controller.chatbot.getConversations);
+  router.get('/api/chatbot/messages/:conversationId', controller.chatbot.getMessages);
+  router.post('/api/chatbot/conversations', controller.chatbot.createConversation);
+  router.delete('/api/chatbot/conversations/:id', controller.chatbot.deleteConversation);
+
   router.get('/error', controller.pages.errorPage);
   // 通用匹配，渲染页面
   router.get('/**', controller.pages.index);

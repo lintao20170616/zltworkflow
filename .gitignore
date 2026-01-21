@@ -20,7 +20,7 @@ stats.html
 .github
 .idea
 .vscode
-*.suo
+*.suo 
 *.ntvs*
 *.njsproj
 *.sln

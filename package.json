@@ -14,7 +14,8 @@
     "eslint": "eslint --fix --cache --ext .js,.ts,.vue,.html .",
     "stylelint": "sh scripts/check-node-version.sh && stylelint **/*.{css,less,scss,vue,html} *.{css,less,scss,vue,html} --fix --cache --quiet",
     "prettier": "prettier **/*.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} *.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} --write --cache --no-error-on-unmatched-pattern",
-    "lint-staged": "lint-staged -p false"
+    "lint-staged": "lint-staged -p false",
+    "migrate": "node scripts/run-migration.js"
   },
   "repository": {
     "type": "git",

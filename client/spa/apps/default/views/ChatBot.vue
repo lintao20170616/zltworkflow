@@ -4,73 +4,142 @@
       <template #header>
         <div class="card-header">
           <span>聊天机器人</span>
+          <div class="header-actions">
+            <el-button type="primary" @click="showNewConversationDialog = true">新建会话</el-button>
+          </div>
         </div>
       </template>
       <div class="chat-container">
-        <div ref="messagesRef" class="chat-messages">
-          <div v-for="(message, index) in messages" :key="index" :class="['message', message.type]">
-            <div class="message-content">
-              <div class="message-text">{{ message.content }}</div>
-              <div class="message-time">{{ message.time }}</div>
+        <div v-if="!currentConversationId" class="empty-state">
+          <el-empty description="请先创建一个新会话" />
+        </div>
+        <template v-else>
+          <div ref="messagesRef" class="chat-messages">
+            <div v-for="(message, index) in messages" :key="message.id || index" :class="['message', message.role]">
+              <div class="message-content">
+                <div class="message-text">{{ message.content }}</div>
+                <div class="message-time">{{ formatTime(message.createdAt) }}</div>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="chat-input">
-          <el-input v-model="inputMessage" type="textarea" :rows="3" placeholder="请输入消息..." @keyup.enter.ctrl="sendMessage" />
-          <div class="input-actions">
-            <el-button type="primary" :loading="sending" @click="sendMessage"> 发送 </el-button>
-            <el-button @click="clearMessages">清空</el-button>
+          <div class="chat-input">
+            <el-input v-model="inputMessage" type="textarea" :rows="3" placeholder="请输入消息..." @keyup.enter.ctrl="sendMessage" />
+            <div class="input-actions">
+              <el-button type="primary" :loading="sending" @click="sendMessage"> 发送 </el-button>
+              <el-button @click="clearMessages">清空</el-button>
+            </div>
           </div>
-        </div>
+        </template>
       </div>
     </el-card>
+
+    <el-dialog v-model="showNewConversationDialog" title="新建会话" width="400px">
+      <el-form :model="newConversationForm" label-width="80px">
+        <el-form-item label="会话标题">
+          <el-input v-model="newConversationForm.title" placeholder="请输入会话标题（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showNewConversationDialog = false">取消</el-button>
+        <el-button type="primary" :loading="creating" @click="handleCreateConversation">创建</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue';
+import { ref, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
+import { sendMessage as sendChatMessage, createConversation, type ChatMessage } from '../service/chatbot';
+import { useUserStore } from '../store';
 
-interface ChatMessage {
-  type: 'user' | 'bot';
-  content: string;
-  time: string;
-}
-
+const userStore = useUserStore();
 const messages = ref<ChatMessage[]>([]);
 const inputMessage = ref('');
 const sending = ref(false);
+const creating = ref(false);
 const messagesRef = ref<HTMLElement>();
+const currentConversationId = ref<number | undefined>();
+const showNewConversationDialog = ref(false);
+const newConversationForm = ref({
+  title: '',
+});
+
+const handleCreateConversation = async () => {
+  if (!userStore.user?.id) {
+    ElMessage.error('请先登录');
+    return;
+  }
+
+  creating.value = true;
+  try {
+    const conversation = await createConversation({
+      title: newConversationForm.value.title || undefined,
+    });
+
+    currentConversationId.value = conversation.id;
+    messages.value = [];
+    showNewConversationDialog.value = false;
+    newConversationForm.value.title = '';
+
+    const welcomeMessage: ChatMessage = {
+      id: 0,
+      role: 'bot',
+      content: '您好！我是聊天机器人，有什么可以帮助您的吗？',
+      createdAt: new Date().toISOString(),
+    };
+    messages.value.push(welcomeMessage);
+
+    ElMessage.success('会话创建成功');
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '创建会话失败');
+  } finally {
+    creating.value = false;
+  }
+};
 
 const sendMessage = async () => {
+  if (!currentConversationId.value) {
+    ElMessage.warning('请先创建一个新会话');
+    return;
+  }
+
   if (!inputMessage.value.trim()) {
     ElMessage.warning('请输入消息内容');
     return;
   }
 
-  const userMessage: ChatMessage = {
-    type: 'user',
-    content: inputMessage.value,
-    time: dayjs().format('HH:mm:ss'),
-  };
-
-  messages.value.push(userMessage);
+  const userContent = inputMessage.value.trim();
   inputMessage.value = '';
   sending.value = true;
 
-  await scrollToBottom();
+  try {
+    const result = await sendChatMessage({
+      message: userContent,
+      conversationId: currentConversationId.value,
+    });
 
-  setTimeout(() => {
-    const botMessage: ChatMessage = {
-      type: 'bot',
-      content: `收到您的消息："${userMessage.content}"。这是一个示例回复。`,
-      time: dayjs().format('HH:mm:ss'),
-    };
-    messages.value.push(botMessage);
+    messages.value.push({
+      id: result.userMessage.id,
+      role: result.userMessage.role,
+      content: result.userMessage.content,
+      createdAt: result.userMessage.createdAt,
+    });
+
+    messages.value.push({
+      id: result.botMessage.id,
+      role: result.botMessage.role,
+      content: result.botMessage.content,
+      createdAt: result.botMessage.createdAt,
+    });
+
+    await scrollToBottom();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '发送消息失败');
+  } finally {
     sending.value = false;
-    scrollToBottom();
-  }, 500);
+  }
 };
 
 const clearMessages = () => {
@@ -85,14 +154,9 @@ const scrollToBottom = async () => {
   }
 };
 
-onMounted(() => {
-  const welcomeMessage: ChatMessage = {
-    type: 'bot',
-    content: '您好！我是聊天机器人，有什么可以帮助您的吗？',
-    time: dayjs().format('HH:mm:ss'),
-  };
-  messages.value.push(welcomeMessage);
-});
+const formatTime = (dateString: string) => {
+  return dayjs(dateString).format('HH:mm:ss');
+};
 </script>
 
 <style scoped>
@@ -106,10 +170,22 @@ onMounted(() => {
   align-items: center;
 }
 
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
   height: 600px;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 
 .chat-messages {
@@ -160,6 +236,10 @@ onMounted(() => {
 
 .message.user .message-time {
   color: rgba(255, 255, 255, 0.8);
+}
+
+.message.bot .message-time {
+  color: #999;
 }
 
 .chat-input {
