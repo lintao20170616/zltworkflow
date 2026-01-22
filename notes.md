@@ -126,6 +126,30 @@
 - 支持流式响应（可选）
 - 支持多种模型切换
 
+## Ollama 记忆与 token 优化设计
+
+### 目标
+- 让模型具备“会话记忆”：能记住用户偏好、关键信息、约束条件
+- 降低上下文 token：避免每次都把全量历史塞给模型
+
+### 记忆类型（当前落地）
+- summary：摘要记忆
+  - 将较早的对话压缩成一段 summary
+  - 请求主模型时：system 中携带 summary + 最近 N 条原始消息
+
+### 摘要生成触发
+- 当消息数达到阈值（`summaryThreshold`）且历史超过 `maxHistoryLength` 时触发
+- 摘要按 `conversationId` 缓存，避免每次重复总结
+
+### 缓存介质
+- Redis：`ollama:memory:summary:${conversationId}`
+- 同时记录最近一次参与摘要的消息位置（用于增量更新）
+
+### token 优化点
+- 限制原始历史条数：只保留最近 `maxHistoryLength` 条
+- 摘要输入限制：只对“早于保留窗口”的消息做总结（并可做增量）
+- 输出限制：通过 `num_predict`（由 `maxTokens` 映射）控制回复长度
+
 ### 前置条件
 1. 安装 Ollama: https://ollama.ai/
 2. 启动服务: `ollama serve`

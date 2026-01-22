@@ -103,10 +103,14 @@ class ChatbotService extends Service {
       let botResponse;
       if (ctx.app.config.ollama?.enabled) {
         try {
-          const response = await ctx.service.ollama.ollamaChat([{ role: 'user', content: content.trim() }], {
-            temperature: 0.7,
-            maxTokens: 2000,
-          });
+          const response = await ctx.service.ollama.ollamaChat(
+            [{ role: 'user', content: content.trim() }],
+            {
+              temperature: 0.7,
+              maxTokens: 2000,
+            },
+            { conversationId: Number(conversationId) },
+          );
 
           if (!response || !response.content) {
             throw new Error(`Ollama 响应格式错误：${JSON.stringify(response)}`);
@@ -236,23 +240,36 @@ class ChatbotService extends Service {
 
   async deleteConversation(conversationId, userId) {
     const { ctx } = this;
+    const transaction = await ctx.model.transaction();
     try {
       const conversation = await ctx.model.Conversation.findOne({
-        where: { id: conversationId, userId },
+        where: { id: Number(conversationId), userId: Number(userId) },
+        transaction,
       });
 
       if (!conversation) {
+        await transaction.rollback();
         return { success: false, message: '会话不存在' };
       }
 
       await ctx.model.Message.destroy({
-        where: { conversationId },
+        where: { conversationId: Number(conversationId) },
+        transaction,
       });
 
-      await conversation.destroy();
+      await conversation.destroy({ transaction });
+
+      await transaction.commit();
+
+      try {
+        await ctx.service.ollama.clearConversationCache(conversationId);
+      } catch (error) {
+        ctx.logger.error('[ChatbotService] clearConversationCache error:', error);
+      }
 
       return { success: true, message: '删除成功' };
     } catch (error) {
+      await transaction.rollback();
       ctx.logger.error('[ChatbotService] deleteConversation error:', error);
       return { success: false, message: '删除会话失败' };
     }
