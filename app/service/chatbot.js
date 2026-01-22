@@ -148,6 +148,15 @@ class ChatbotService extends Service {
 
       await transaction.commit();
 
+      try {
+        await ctx.service.ollama.appendRecentMessages(Number(conversationId), [
+          { id: userMessage.id, role: 'user', content: userMessage.content },
+          { id: botMessage.id, role: 'bot', content: botMessage.content },
+        ]);
+      } catch (error) {
+        ctx.logger.error('[ChatbotService] appendRecentMessages error:', error);
+      }
+
       return {
         success: true,
         data: {

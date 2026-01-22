@@ -72,6 +72,14 @@ class OllamaService extends Service {
     return `ollama:memory:vector_meta:${conversationId}`;
   }
 
+  getRecentCacheKey(conversationId) {
+    return `ollama:ctx:recent:${conversationId}`;
+  }
+
+  getRecentMetaCacheKey(conversationId) {
+    return `ollama:ctx:recent_meta:${conversationId}`;
+  }
+
   async clearConversationCache(conversationId) {
     const redis = this.getRedisClient();
     if (!redis) {
@@ -79,7 +87,14 @@ class OllamaService extends Service {
     }
 
     const id = Number(conversationId);
-    await redis.del(this.getSummaryCacheKey(id), this.getSummaryMetaCacheKey(id), this.getVectorCacheKey(id), this.getVectorMetaCacheKey(id));
+    await redis.del(
+      this.getSummaryCacheKey(id),
+      this.getSummaryMetaCacheKey(id),
+      this.getVectorCacheKey(id),
+      this.getVectorMetaCacheKey(id),
+      this.getRecentCacheKey(id),
+      this.getRecentMetaCacheKey(id),
+    );
   }
 
   async getCachedSummary(conversationId) {
@@ -111,6 +126,141 @@ class OllamaService extends Service {
     const ttlSeconds = 7 * 24 * 60 * 60;
     await redis.set(this.getSummaryCacheKey(conversationId), summary, 'EX', ttlSeconds);
     await redis.set(this.getSummaryMetaCacheKey(conversationId), JSON.stringify(meta || {}), 'EX', ttlSeconds);
+  }
+
+  async getCachedRecent(conversationId) {
+    const redis = this.getRedisClient();
+    if (!redis) {
+      return null;
+    }
+
+    const memoryConfig = this.getMemoryConfig();
+    const maxHistoryLength = Math.max(1, memoryConfig.maxHistoryLength);
+
+    const rawList = await redis.lrange(this.getRecentCacheKey(conversationId), -maxHistoryLength, -1);
+    const metaRaw = await redis.get(this.getRecentMetaCacheKey(conversationId));
+
+    let meta = null;
+    if (metaRaw) {
+      try {
+        meta = JSON.parse(metaRaw);
+      } catch {
+        meta = null;
+      }
+    }
+
+    const messages = (rawList || [])
+      .map((s) => {
+        try {
+          return JSON.parse(s);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+      }));
+
+    return { messages, meta };
+  }
+
+  async rebuildRecentCacheFromDb(conversationId) {
+    const { ctx } = this;
+    const redis = this.getRedisClient();
+    if (!redis) {
+      return null;
+    }
+
+    const memoryConfig = this.getMemoryConfig();
+    const maxHistoryLength = Math.max(1, memoryConfig.maxHistoryLength);
+
+    const rows = await ctx.model.Message.findAll({
+      where: { conversationId: Number(conversationId) },
+      order: [['id', 'DESC']],
+      limit: maxHistoryLength,
+      attributes: ['id', 'role', 'content'],
+    });
+
+    const ordered = (rows || []).slice().reverse();
+    const listPayload = ordered.map((m) =>
+      JSON.stringify({
+        id: m.id,
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content,
+      }),
+    );
+
+    const key = this.getRecentCacheKey(conversationId);
+    const metaKey = this.getRecentMetaCacheKey(conversationId);
+    const ttlSeconds = 7 * 24 * 60 * 60;
+
+    await redis.del(key);
+    if (listPayload.length > 0) {
+      await redis.rpush(key, ...listPayload);
+      await redis.expire(key, ttlSeconds);
+    }
+
+    const minId = ordered.length > 0 ? ordered[0].id : null;
+    const maxId = ordered.length > 0 ? ordered[ordered.length - 1].id : null;
+    const meta = { minId, maxId, hasOlder: false };
+    await redis.set(metaKey, JSON.stringify(meta), 'EX', ttlSeconds);
+
+    return { messages: ordered.map((m) => ({ id: m.id, role: m.role === 'user' ? 'user' : 'assistant', content: m.content })), meta };
+  }
+
+  async appendRecentMessages(conversationId, newMessages) {
+    const redis = this.getRedisClient();
+    if (!redis) {
+      return;
+    }
+
+    const id = Number(conversationId);
+    const memoryConfig = this.getMemoryConfig();
+    const maxHistoryLength = Math.max(1, memoryConfig.maxHistoryLength);
+
+    const key = this.getRecentCacheKey(id);
+    const metaKey = this.getRecentMetaCacheKey(id);
+    const ttlSeconds = 7 * 24 * 60 * 60;
+
+    const beforeLen = await redis.llen(key);
+
+    const payload = (newMessages || []).map((m) =>
+      JSON.stringify({
+        id: m.id,
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content,
+      }),
+    );
+
+    if (payload.length > 0) {
+      const multi = redis.multi();
+      multi.rpush(key, ...payload);
+      multi.ltrim(key, -maxHistoryLength, -1);
+      multi.expire(key, ttlSeconds);
+      await multi.exec();
+    }
+
+    const first = await redis.lindex(key, 0);
+    const last = await redis.lindex(key, -1);
+
+    let minId = null;
+    let maxId = null;
+    if (first) {
+      try {
+        minId = JSON.parse(first).id;
+      } catch {}
+    }
+    if (last) {
+      try {
+        maxId = JSON.parse(last).id;
+      } catch {}
+    }
+
+    const hasOlder = beforeLen >= maxHistoryLength;
+    await redis.set(metaKey, JSON.stringify({ minId, maxId, hasOlder }), 'EX', ttlSeconds);
   }
 
   async getCachedVectorMemory(conversationId) {
@@ -154,10 +304,11 @@ class OllamaService extends Service {
     const { ctx } = this;
     const messages = await ctx.model.Message.findAll({
       where: { conversationId: Number(conversationId) },
-      order: [['createdAt', 'ASC']],
+      order: [['createdAt', 'DESC']],
+      limit: 10,
       attributes: ['id', 'role', 'content', 'createdAt'],
     });
-    return messages || [];
+    return (messages || []).slice().reverse();
   }
 
   cosineSimilarity(a, b) {
@@ -318,18 +469,13 @@ class OllamaService extends Service {
       return userMessages;
     }
 
-    const allMessages = await this.getConversationMessages(conversationId);
-    if (!allMessages.length) {
-      return userMessages;
-    }
-
-    const maxHistoryLength = Math.max(1, memoryConfig.maxHistoryLength);
-
-    const keepStartIndex = Math.max(0, allMessages.length - maxHistoryLength);
-    const olderMessages = allMessages.slice(0, keepStartIndex);
-    const recentMessages = allMessages.slice(keepStartIndex);
-
     const messagesForChat = [];
+    let recent = await this.getCachedRecent(conversationId);
+    if (!recent || !Array.isArray(recent.messages)) {
+      recent = await this.rebuildRecentCacheFromDb(conversationId);
+    }
+    const recentMessages = recent?.messages || [];
+    const recentMeta = recent?.meta || {};
 
     if (memoryConfig.type === 'summary') {
       const cached = await this.getCachedSummary(conversationId);
@@ -338,13 +484,29 @@ class OllamaService extends Service {
 
       let summaryToUse = cachedSummary;
       const summaryThreshold = Math.max(1, memoryConfig.summaryThreshold);
-      const incremental = allMessages.filter((m) => m.id > lastSummarizedId);
-      if (incremental.length >= summaryThreshold || (!summaryToUse && allMessages.length > 0)) {
-        const target = incremental.length > 0 ? incremental : allMessages;
-        const newSummary = await this.buildSummary(conversationId, target, summaryToUse);
-        const newLastId = target[target.length - 1].id;
-        summaryToUse = newSummary;
-        await this.setCachedSummary(conversationId, summaryToUse, { lastSummarizedId: newLastId });
+      const minCachedId = Number(recentMeta?.minId || 0);
+      const hasOlder = !!recentMeta?.hasOlder;
+
+      if (hasOlder && minCachedId > 0) {
+        const { ctx } = this;
+        const Op = ctx.app.Sequelize.Op;
+        const incremental = await ctx.model.Message.findAll({
+          where: {
+            conversationId: Number(conversationId),
+            id: { [Op.gt]: Number(lastSummarizedId), [Op.lt]: minCachedId },
+          },
+          order: [['id', 'ASC']],
+          limit: 50,
+          attributes: ['id', 'role', 'content'],
+        });
+
+        if (incremental.length >= summaryThreshold || (!summaryToUse && incremental.length > 0)) {
+          const target = incremental.map((m) => ({ id: m.id, role: m.role, content: m.content }));
+          const newSummary = await this.buildSummary(conversationId, target, summaryToUse);
+          const newLastId = target[target.length - 1].id;
+          summaryToUse = newSummary;
+          await this.setCachedSummary(conversationId, summaryToUse, { lastSummarizedId: newLastId });
+        }
       }
 
       if (summaryToUse) {
@@ -355,25 +517,7 @@ class OllamaService extends Service {
       }
     }
 
-    if (memoryConfig.type === 'vector') {
-      await this.ensureVectorMemoryUpdated(conversationId, olderMessages.concat(recentMessages));
-      const query = userMessages && userMessages.length ? userMessages[userMessages.length - 1].content : '';
-      const recalled = await this.retrieveVectorMemory(conversationId, query);
-      if (recalled.length > 0) {
-        const content = recalled.map((t) => `- ${this.truncateText(t, 200)}`).join('\n');
-        messagesForChat.push({
-          role: 'system',
-          content: `相关记忆：\n${content}`,
-        });
-      }
-    }
-
-    const mappedRecent = recentMessages.map((m) => ({
-      role: m.role === 'user' ? 'user' : 'assistant',
-      content: m.content,
-    }));
-
-    return messagesForChat.concat(mappedRecent).concat(userMessages);
+    return messagesForChat.concat(recentMessages).concat(userMessages);
   }
 
   async ollamaChat(messages, options = {}, context = null) {
