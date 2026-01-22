@@ -191,7 +191,6 @@ class ChatbotController extends Controller {
 
       ctx.logger.info('[ChatbotController] 开始测试 Ollama 插件', {
         message,
-        hasOllama: !!ctx.app.ollama,
         configEnabled: ctx.app.config.ollama?.enabled,
       });
 

@@ -101,7 +101,7 @@ class ChatbotService extends Service {
       );
 
       let botResponse;
-      if (ctx.app.ollama && ctx.app.config.ollama?.enabled) {
+      if (ctx.app.config.ollama?.enabled) {
         try {
           const response = await ctx.service.ollama.ollamaChat([{ role: 'user', content: content.trim() }], {
             temperature: 0.7,
