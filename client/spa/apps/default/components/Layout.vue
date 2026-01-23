@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { Odometer, User, ChatLineRound, Fold, Expand, ArrowDown } from '@element-plus/icons-vue';
+import { Odometer, User, ChatLineRound, Fold, Expand, ArrowDown, Setting, Menu as MenuIcon } from '@element-plus/icons-vue';
 import { useUserStore } from '../store';
 import menuData from '../json/menu.json';
 
@@ -68,6 +68,8 @@ const getIcon = (iconName: string) => {
     Odometer,
     User,
     ChatLineRound,
+    Setting,
+    Menu: MenuIcon,
   };
   return iconMap[iconName] || Odometer;
 };

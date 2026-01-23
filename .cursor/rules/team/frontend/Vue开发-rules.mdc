@@ -25,6 +25,7 @@ version: "1.0.0"
 5. 在template中使用简洁的表达式
 6. 在script中使用详细的逻辑
 7. 组件文件以.vue结尾
+8. 页面组件创建以功能名作为文件夹名称然后在文件夹中创建index.vue
 
 ## Composition API规范
 1. 使用<script setup>语法糖

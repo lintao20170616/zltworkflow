@@ -36,8 +36,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { ElButton, ElTable, ElTableColumn, ElTag, ElMessage, ElCard } from 'element-plus';
-import { getUserList, type UserListItem } from '../service/auth';
+import { ElMessage } from 'element-plus';
+import { getUserList, type UserListItem } from '@app/service/auth';
 
 const userList = ref<UserListItem[]>([]);
 const loading = ref(false);

@@ -72,7 +72,7 @@ const loginRules: FormRules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 };
 
-const validateConfirmPassword = (rule: unknown, value: string, callback: (error?: Error) => void) => {
+const validateConfirmPassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
   if (value !== registerForm.value.password) {
     callback(new Error('两次输入的密码不一致'));
   } else {
@@ -113,7 +113,7 @@ const handleLogin = async () => {
         await nextTick();
         await router.push({ path: '/layout' });
       } else {
-        ElMessage.error(res?.message || '登录失败');
+        ElMessage.error('登录失败');
       }
     } catch (e: unknown) {
       const error = e as Error;
@@ -143,7 +143,7 @@ const handleRegister = async () => {
         await nextTick();
         await router.push({ path: '/layout' });
       } else {
-        ElMessage.error(res?.message || '注册失败');
+        ElMessage.error('注册失败');
       }
     } catch (e: unknown) {
       const error = e as Error;

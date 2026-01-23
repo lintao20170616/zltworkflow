@@ -105,3 +105,83 @@
 - [ ] 记忆策略优化：动态调整摘要阈值
 - [ ] 监控和日志：添加详细的性能指标
 - [ ] 流式响应支持：实现实时流式输出
+
+---
+
+# 任务计划：系统管理与菜单管理（系统-菜单 1 对多）
+
+## 目标
+在 MySQL 新增**系统表**与**菜单表**（系统与菜单 1 对多，均含状态字段且默认启用），并在前端新增“系统管理”“菜单管理”入口，实现系统与菜单的增删改查。
+
+## 阶段
+- [ ] 阶段 1: 数据库设计与迁移脚本
+  - [ ] 确定表名与字段（含状态默认启用）
+  - [ ] 新增迁移脚本 `database/migrations/002_create_system_menu_tables.sql`
+  - [ ] 调整迁移执行方式：`scripts/run-migration.js` 支持按文件名顺序执行 `database/migrations/*.sql`（避免只跑 001）
+- [ ] 阶段 2: 后端模型与接口
+  - [ ] 新增 Sequelize Model：`app/model/system.js`、`app/model/menu.js`
+  - [ ] 建立关联：System.hasMany(Menu)，Menu.belongsTo(System)
+  - [ ] 新增 Service：`app/service/system.js`、`app/service/menu.js`
+  - [ ] 新增 Controller：`app/controller/system.js`、`app/controller/menu.js`
+  - [ ] 注册路由：在 `app/router.js` 增加系统/菜单 CRUD API
+- [ ] 阶段 3: 前端入口与页面（Vue3 + Element Plus）
+  - [ ] 侧边栏新增入口：更新 `client/spa/apps/default/json/menu.json`
+  - [ ] 图标支持：更新 `client/spa/apps/default/components/Layout.vue` 的 iconMap（为新增菜单项提供 icon）
+  - [ ] 路由新增：更新 `client/spa/apps/default/router/index.ts`
+  - [ ] 新增系统管理页面：列表、搜索、创建/编辑弹窗、删除、启用/禁用
+  - [ ] 新增菜单管理页面：按系统筛选、列表/树形（可选）、创建/编辑弹窗、删除、启用/禁用
+  - [ ] 新增前端接口封装：在 `client/spa/apps/default/service/` 增加 system/menu API 调用
+- [ ] 阶段 4: 联调与校验
+  - [ ] 联调：前端 CRUD 正常、状态默认启用生效
+  - [ ] 校验：系统删除时菜单级联处理符合预期（CASCADE / RESTRICT 取决于业务选择）
+
+## 关键问题
+1. 菜单是否需要层级（parentId）？若需要，菜单表需支持 `parent_id`，前端可用树表展示与编辑。
+2. 删除策略：删除系统时是否允许级联删除其菜单？（建议：允许级联删除，避免孤儿菜单）
+3. 菜单字段范围：仅做管理（title/path/icon/sort/status）还是还要包含权限标识（permissionCode）与前端组件路径（component）？
+
+## 已做决策
+- 使用 MySQL + SQL 迁移脚本方式新增表（与现有 `database/migrations` 方案一致）。
+- 状态字段使用 `TINYINT`：`1-启用，0-禁用`，默认 `1`（与 `users.status` 风格一致）。
+
+## 表结构草案（可在阶段 1 落最终版）
+
+### systems（系统表）
+- id（INT UNSIGNED，自增，PK）
+- code（VARCHAR(64)，唯一，系统编码）
+- name（VARCHAR(128)，系统名称）
+- status（TINYINT，默认 1）
+- sort（INT，默认 0）
+- created_at / updated_at（DATETIME）
+
+### menus（菜单表）
+- id（INT UNSIGNED，自增，PK）
+- system_id（INT UNSIGNED，FK -> systems.id）
+- parent_id（INT UNSIGNED，可空，FK -> menus.id，用于层级菜单，可选）
+- title（VARCHAR(128)，菜单标题）
+- name（VARCHAR(64)，路由 name/标识）
+- path（VARCHAR(255)，路由 path）
+- icon（VARCHAR(64)，图标名，可空）
+- component（VARCHAR(255)，组件路径/标识，可空，可选）
+- status（TINYINT，默认 1）
+- sort（INT，默认 0）
+- created_at / updated_at（DATETIME）
+
+## API 草案（阶段 2 落最终版）
+
+### 系统
+- GET `/api/system/list`
+- POST `/api/system`
+- PUT `/api/system/:id`
+- DELETE `/api/system/:id`
+- PATCH `/api/system/:id/status`
+
+### 菜单
+- GET `/api/menu/list?systemId=...`
+- POST `/api/menu`
+- PUT `/api/menu/:id`
+- DELETE `/api/menu/:id`
+- PATCH `/api/menu/:id/status`
+
+## 状态
+**当前处于阶段 1** - 先落库表结构与迁移方案，再按 Model/Service/Controller/前端页面顺序推进。

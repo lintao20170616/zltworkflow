@@ -11,6 +11,55 @@ const config = {
   multipleStatements: true,
 };
 
+const MIGRATIONS_DIR = path.join(__dirname, '../database/migrations');
+
+const getMigrationFiles = () => {
+  if (!fs.existsSync(MIGRATIONS_DIR)) {
+    throw new Error(`迁移目录不存在: ${MIGRATIONS_DIR}`);
+  }
+
+  return fs
+    .readdirSync(MIGRATIONS_DIR)
+    .filter((fileName) => fileName.endsWith('.sql'))
+    .sort((a, b) => a.localeCompare(b));
+};
+
+const executeSqlFile = async (connection, sqlFilePath) => {
+  if (!fs.existsSync(sqlFilePath)) {
+    throw new Error(`SQL 文件不存在: ${sqlFilePath}`);
+  }
+
+  const sql = fs.readFileSync(sqlFilePath, 'utf8');
+  const lines = sql.split('\n');
+
+  let currentStatement = '';
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (!trimmed || trimmed.startsWith('--')) {
+      continue;
+    }
+
+    currentStatement += line + '\n';
+
+    if (trimmed.endsWith(';')) {
+      const statement = currentStatement.trim();
+      if (statement) {
+        try {
+          await connection.query(statement);
+          console.log(`✅ 执行: ${statement.substring(0, 50)}...`);
+        } catch (error) {
+          if (error.code !== 'ER_TABLE_EXISTS_ERROR') {
+            throw error;
+          }
+          console.log(`⚠️  表已存在，跳过: ${statement.substring(0, 50)}...`);
+        }
+      }
+      currentStatement = '';
+    }
+  }
+};
+
 async function runMigration() {
   let connection;
   try {
@@ -18,64 +67,36 @@ async function runMigration() {
     connection = await mysql.createConnection(config);
     console.log('✅ 数据库连接成功');
 
-    const sqlFile = path.join(__dirname, '../database/migrations/001_create_chatbot_tables.sql');
-
-    if (!fs.existsSync(sqlFile)) {
-      throw new Error(`SQL 文件不存在: ${sqlFile}`);
+    const migrationFiles = getMigrationFiles();
+    if (migrationFiles.length === 0) {
+      console.log('⚠️  未找到任何迁移脚本（.sql），跳过执行');
+      return;
     }
 
-    const sql = fs.readFileSync(sqlFile, 'utf8');
-    console.log('正在执行迁移脚本...');
+    console.log(`发现迁移脚本 ${migrationFiles.length} 个，开始按顺序执行...`);
 
-    const lines = sql.split('\n');
-    let currentStatement = '';
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-
-      if (!trimmed || trimmed.startsWith('--')) {
-        continue;
-      }
-
-      currentStatement += line + '\n';
-
-      if (trimmed.endsWith(';')) {
-        const statement = currentStatement.trim();
-        if (statement) {
-          try {
-            await connection.query(statement);
-            console.log(`✅ 执行: ${statement.substring(0, 50)}...`);
-          } catch (error) {
-            if (error.code !== 'ER_TABLE_EXISTS_ERROR') {
-              throw error;
-            }
-            console.log(`⚠️  表已存在，跳过: ${statement.substring(0, 50)}...`);
-          }
-        }
-        currentStatement = '';
-      }
+    for (const fileName of migrationFiles) {
+      const filePath = path.join(MIGRATIONS_DIR, fileName);
+      console.log(`\n正在执行: ${fileName}`);
+      await executeSqlFile(connection, filePath);
     }
 
     console.log('✅ 迁移脚本执行成功！');
 
     console.log('\n验证表是否创建成功...');
-    const [conversationsTable] = await connection.query("SHOW TABLES LIKE 'conversations'");
-    const [messagesTable] = await connection.query("SHOW TABLES LIKE 'messages'");
+    const [systemsTable] = await connection.query("SHOW TABLES LIKE 'systems'");
+    const [menusTable] = await connection.query("SHOW TABLES LIKE 'menus'");
 
-    if (conversationsTable.length > 0) {
-      console.log('✅ conversations 表已创建');
-      const [columns] = await connection.query('DESCRIBE conversations');
-      console.log('   表结构:', columns.map((c) => c.Field).join(', '));
+    if (systemsTable.length > 0) {
+      console.log('✅ systems 表已创建');
     } else {
-      console.log('❌ conversations 表未创建');
+      console.log('❌ systems 表未创建');
     }
 
-    if (messagesTable.length > 0) {
-      console.log('✅ messages 表已创建');
-      const [columns] = await connection.query('DESCRIBE messages');
-      console.log('   表结构:', columns.map((c) => c.Field).join(', '));
+    if (menusTable.length > 0) {
+      console.log('✅ menus 表已创建');
     } else {
-      console.log('❌ messages 表未创建');
+      console.log('❌ menus 表未创建');
     }
   } catch (error) {
     console.error('❌ 执行迁移失败:', error.message);

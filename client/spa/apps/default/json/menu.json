@@ -19,5 +19,19 @@
     "icon": "ChatLineRound",
     "path": "/layout/chatbot",
     "name": "ChatBot"
+  },
+  {
+    "id": "system-manage",
+    "title": "系统管理",
+    "icon": "Setting",
+    "path": "/layout/system",
+    "name": "SystemManage"
+  },
+  {
+    "id": "menu-manage",
+    "title": "菜单管理",
+    "icon": "Menu",
+    "path": "/layout/menu",
+    "name": "MenuManage"
   }
 ]

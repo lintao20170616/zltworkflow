@@ -9,7 +9,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/Home.vue'),
+    component: () => import('../views/auth/login.vue'),
     meta: { requiresAuth: false },
   },
   {
@@ -21,19 +21,31 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'dashboard',
         name: 'Dashboard',
-        component: () => import('../views/Dashboard.vue'),
+        component: () => import('../views/dashboard/index.vue'),
         meta: { requiresAuth: true },
       },
       {
         path: 'user-info',
         name: 'UserInfo',
-        component: () => import('../views/UserInfo.vue'),
+        component: () => import('../views/user/info.vue'),
         meta: { requiresAuth: true },
       },
       {
         path: 'chatbot',
         name: 'ChatBot',
-        component: () => import('../views/ChatBot.vue'),
+        component: () => import('../views/chatbot/index.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'system',
+        name: 'SystemManage',
+        component: () => import('../views/system/manage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'menu',
+        name: 'MenuManage',
+        component: () => import('../views/menu/manage.vue'),
         meta: { requiresAuth: true },
       },
     ],

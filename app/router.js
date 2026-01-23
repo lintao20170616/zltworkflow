@@ -7,6 +7,20 @@ module.exports = (app) => {
   router.post('/api/user/logout', controller.user.logout);
   router.get('/api/user/list', controller.user.getUserList);
 
+  // 系统管理接口
+  router.get('/api/system/list', controller.system.list);
+  router.post('/api/system', controller.system.create);
+  router.put('/api/system/:id', controller.system.update);
+  router.delete('/api/system/:id', controller.system.delete);
+  router.patch('/api/system/:id/status', controller.system.updateStatus);
+
+  // 菜单管理接口
+  router.get('/api/menu/list', controller.menu.list);
+  router.post('/api/menu', controller.menu.create);
+  router.put('/api/menu/:id', controller.menu.update);
+  router.delete('/api/menu/:id', controller.menu.delete);
+  router.patch('/api/menu/:id/status', controller.menu.updateStatus);
+
   // 聊天机器人接口
   router.post('/api/chatbot/send', controller.chatbot.sendMessage);
   router.get('/api/chatbot/conversations', controller.chatbot.getConversations);

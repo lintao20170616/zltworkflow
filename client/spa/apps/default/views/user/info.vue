@@ -21,9 +21,6 @@
             {{ userStore.user?.status === 1 ? '启用' : '禁用' }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="创建时间" :span="2">
-          {{ userStore.user?.createdAt || '-' }}
-        </el-descriptions-item>
       </el-descriptions>
       <div class="actions" style="margin-top: 20px">
         <el-button type="primary" @click="refreshUserInfo">刷新信息</el-button>
@@ -33,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { useUserStore } from '../store';
+import { useUserStore } from '@app/store';
 import { ElMessage } from 'element-plus';
 
 const userStore = useUserStore();

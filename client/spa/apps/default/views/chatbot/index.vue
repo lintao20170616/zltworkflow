@@ -83,8 +83,8 @@ import {
   testOllama,
   type ChatMessage,
   type Conversation,
-} from '../service/chatbot';
-import { useUserStore } from '../store';
+} from '@app/service/chatbot';
+import { useUserStore } from '@app/store';
 
 const userStore = useUserStore();
 const messages = ref<ChatMessage[]>([]);
