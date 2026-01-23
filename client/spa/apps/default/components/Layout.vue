@@ -75,15 +75,10 @@ const getIcon = (iconName: string) => {
 const handleCommand = async (command: string) => {
   if (command === 'logout') {
     await userStore.logout();
-    router.push('/');
+    router.push('/login');
   }
 };
-
-onMounted(() => {
-  if (!userStore.user) {
-    router.push('/');
-  }
-});
+onMounted(() => {});
 </script>
 
 <style scoped>

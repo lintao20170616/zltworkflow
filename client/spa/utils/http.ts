@@ -116,7 +116,7 @@ const errorHandler = async (error: unknown): Promise<never> => {
   if (status === 401) {
     const userStore = useUserStore();
     await userStore.logout();
-    router.push('/');
+    router.push('/login');
     return Promise.reject(new Error('登录信息已过期，请重新登录！'));
   }
 

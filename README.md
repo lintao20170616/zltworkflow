@@ -35,15 +35,17 @@ zltworkflow/
 │   └── lib/                # 插件库
 ├── client/                 # 前端应用
 │   └── spa/                # SPA 应用目录
-│       └── apps/           # 多应用模块
-│           └── default/    # 默认应用
-│               ├── components/  # 组件
-│               ├── views/       # 页面
-│               ├── router/      # 路由
-│               ├── service/     # API 服务
-│               ├── store/       # Pinia 状态管理
-│               ├── utils/       # 工具函数
-│               └── styles/      # 样式文件
+│       ├── apps/           # 多应用模块
+│       │    └── default/    # 默认应用
+│       │        ├── components/  # 项目组件
+│       │        ├── views/       # 页面
+│       │        ├── router/      # 路由
+│       │        ├── service/     # API 服务
+│       │        ├── store/       # Pinia 状态管理
+│       │        ├── utils/       # 工具函数
+│       │        └── styles/      # 样式文件
+│       ├── components/      # 全局组件
+│       └── utils/         # 全局工具函数
 ├── config/                 # 配置文件
 ├── database/               # 数据库脚本
 ├── scripts/                # 脚本文件

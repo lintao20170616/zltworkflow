@@ -16,7 +16,8 @@ onMounted(async () => {
   if (route.path === '/' && isLoggedIn) {
     router.push('/layout');
   } else if (route.path !== '/' && !isLoggedIn) {
-    router.push('/');
+    console.log('跳转到登录页面');
+    router.push('/login');
   }
 });
 
@@ -26,7 +27,7 @@ watch(
     if (newPath !== '/') {
       const isLoggedIn = await userStore.checkLoginStatus();
       if (!isLoggedIn) {
-        router.push('/');
+        router.push('/login');
       }
     }
   },
