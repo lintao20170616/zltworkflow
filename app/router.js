@@ -13,6 +13,7 @@ module.exports = (app) => {
   router.put('/api/system/:id', controller.system.update);
   router.delete('/api/system/:id', controller.system.delete);
   router.patch('/api/system/:id/status', controller.system.updateStatus);
+  router.get('/api/system/menu-tree', controller.system.menuTree);
 
   // 菜单管理接口
   router.get('/api/menu/list', controller.menu.list);

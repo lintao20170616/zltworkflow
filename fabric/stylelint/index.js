@@ -43,15 +43,11 @@ module.exports = {
     },
     {
       files: ['**/*.less'],
-      extends: ['stylelint-config-standard-less', 'stylelint-config-css-modules'],
+      extends: ['stylelint-config-standard', 'stylelint-config-css-modules'],
       customSyntax: 'postcss-less',
       rules: {
         // 开启函数
         'function-no-unknown': [true, { ignoreFunctions: ['tint', 'fade', 'svg-gradient', 'image-width', 'image-height', 'image-size', 'darken', 'lighten'] }],
-
-        // 解析有问题，只好关闭
-        'less/color-no-invalid-hex': null,
-        'less/no-duplicate-variables': null,
       },
     },
     {

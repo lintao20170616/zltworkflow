@@ -48,3 +48,34 @@ export const deleteSystem = async (id: number): Promise<void> => {
 export const updateSystemStatus = async (id: number, status: number): Promise<SystemItem> => {
   return http.api.patch(`/system/${id}/status`, { data: { status } });
 };
+
+export interface MenuTreeItem {
+  id: number;
+  systemId?: number;
+  parentId?: number | null;
+  title: string;
+  name?: string;
+  path?: string;
+  icon?: string | null;
+  component?: string | null;
+  status?: number;
+  sort?: number;
+  children?: MenuTreeItem[];
+}
+
+export interface SystemMenuTreeItem {
+  id: number;
+  code: string;
+  name: string;
+  title: string;
+  children: MenuTreeItem[];
+}
+
+export interface SystemMenuTreeParams {
+  systemId?: number;
+  status?: number | '';
+}
+
+export const getSystemMenuTree = async (params?: SystemMenuTreeParams): Promise<SystemMenuTreeItem[]> => {
+  return http.api.get('/system/menu-tree', { params });
+};

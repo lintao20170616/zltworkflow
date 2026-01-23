@@ -4,7 +4,8 @@ import 'element-plus/dist/index.css';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 import router from './router';
 import pinia from './store';
-import './styles/style.css';
+import './styles/style.less';
+import './styles/theme.less';
 import App from './App.vue';
 
 const app = createApp(App);

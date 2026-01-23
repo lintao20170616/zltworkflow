@@ -5,3 +5,4 @@ const pinia = createPinia();
 export default pinia;
 
 export { useUserStore } from './user';
+export { useMenuStore } from './menu';

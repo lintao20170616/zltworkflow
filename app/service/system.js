@@ -91,6 +91,127 @@ class SystemService extends Service {
     await system.save();
     return { success: true, data: system };
   }
+
+  async menuTree({ systemId, status } = {}) {
+    const { ctx } = this;
+
+    const systemWhere = {};
+    const menuWhere = {};
+
+    if (systemId !== undefined && systemId !== null && systemId !== '') {
+      const sid = Number(systemId);
+      if (!Number.isFinite(sid) || sid <= 0) {
+        return { success: false, message: 'systemId 不合法' };
+      }
+      systemWhere.id = sid;
+      menuWhere.systemId = sid;
+    }
+
+    if (typeof status !== 'undefined' && status !== '') {
+      const s = Number(status);
+      if (!Number.isFinite(s)) {
+        return { success: false, message: 'status 不合法' };
+      }
+      systemWhere.status = s;
+      menuWhere.status = s;
+    } else {
+      systemWhere.status = 1;
+      menuWhere.status = 1;
+    }
+
+    const systems = await ctx.model.System.findAll({
+      where: systemWhere,
+      order: [
+        ['sort', 'ASC'],
+        ['id', 'ASC'],
+      ],
+      raw: true,
+    });
+
+    if (systemWhere.id && systems.length === 0) {
+      return { success: false, message: '系统不存在' };
+    }
+
+    const menus = await ctx.model.Menu.findAll({
+      where: menuWhere,
+      order: [
+        ['sort', 'ASC'],
+        ['id', 'ASC'],
+      ],
+      raw: true,
+    });
+
+    const menusBySystemId = new Map();
+    for (const m of menus) {
+      const sid = Number(m.systemId);
+      if (!menusBySystemId.has(sid)) menusBySystemId.set(sid, []);
+      menusBySystemId.get(sid).push(m);
+    }
+
+    const sortTree = (nodes) => {
+      nodes.sort((a, b) => {
+        const sa = Number(a.sort ?? 0);
+        const sb = Number(b.sort ?? 0);
+        if (sa !== sb) return sa - sb;
+        return Number(a.id) - Number(b.id);
+      });
+      for (const n of nodes) {
+        if (Array.isArray(n.children) && n.children.length > 0) {
+          sortTree(n.children);
+        }
+      }
+    };
+
+    const buildMenuTree = (systemMenus) => {
+      const nodeMap = new Map();
+      for (const m of systemMenus) {
+        nodeMap.set(Number(m.id), {
+          id: m.id,
+          systemId: m.systemId,
+          parentId: m.parentId,
+          title: m.title,
+          name: m.name,
+          path: m.path,
+          icon: m.icon,
+          component: m.component,
+          status: m.status,
+          sort: m.sort,
+          children: [],
+        });
+      }
+
+      const roots = [];
+      for (const node of nodeMap.values()) {
+        const pid = node.parentId;
+        if (pid === null || pid === undefined || pid === '' || Number(pid) === 0) {
+          roots.push(node);
+          continue;
+        }
+        const parent = nodeMap.get(Number(pid));
+        if (!parent) {
+          roots.push(node);
+          continue;
+        }
+        parent.children.push(node);
+      }
+
+      sortTree(roots);
+      return roots;
+    };
+
+    const data = systems.map((sys) => {
+      const systemMenus = menusBySystemId.get(Number(sys.id)) || [];
+      return {
+        id: sys.id,
+        code: sys.code,
+        name: sys.name,
+        title: sys.name,
+        children: buildMenuTree(systemMenus),
+      };
+    });
+
+    return { success: true, data };
+  }
 }
 
 module.exports = SystemService;
