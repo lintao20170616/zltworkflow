@@ -210,7 +210,19 @@ const sendMessage = async () => {
   }
 
   const userContent = inputMessage.value.trim();
+  const tempUserMessageId = Date.now();
+
+  const tempUserMessage: ChatMessage = {
+    id: tempUserMessageId,
+    role: 'user',
+    content: userContent,
+    createdAt: new Date().toISOString(),
+  };
+
+  messages.value.push(tempUserMessage);
   inputMessage.value = '';
+  await scrollToBottom();
+
   sending.value = true;
 
   try {
@@ -219,12 +231,15 @@ const sendMessage = async () => {
       conversationId: currentConversationId.value,
     });
 
-    messages.value.push({
-      id: result.userMessage.id,
-      role: result.userMessage.role,
-      content: result.userMessage.content,
-      createdAt: result.userMessage.createdAt,
-    });
+    const userMessageIndex = messages.value.findIndex((m) => m.id === tempUserMessageId);
+    if (userMessageIndex !== -1) {
+      messages.value[userMessageIndex] = {
+        id: result.userMessage.id,
+        role: result.userMessage.role,
+        content: result.userMessage.content,
+        createdAt: result.userMessage.createdAt,
+      };
+    }
 
     messages.value.push({
       id: result.botMessage.id,
@@ -236,6 +251,10 @@ const sendMessage = async () => {
     await scrollToBottom();
     await loadConversations();
   } catch (error) {
+    const userMessageIndex = messages.value.findIndex((m) => m.id === tempUserMessageId);
+    if (userMessageIndex !== -1) {
+      messages.value.splice(userMessageIndex, 1);
+    }
     ElMessage.error(error instanceof Error ? error.message : '发送消息失败');
   } finally {
     sending.value = false;
