@@ -25,7 +25,7 @@ class SystemService extends Service {
     return { success: true, data: systems };
   }
 
-  async create({ code, name, status = 1, sort = 0 }) {
+  async create({ code, name, status = 1, isExternal = 0, externalUrl, sort = 0 }) {
     const { ctx } = this;
     const existing = await ctx.model.System.findOne({ where: { code: String(code) } });
     if (existing) {
@@ -36,13 +36,15 @@ class SystemService extends Service {
       code: String(code),
       name: String(name),
       status: Number(status),
+      isExternal: Number(isExternal),
+      externalUrl: externalUrl ? String(externalUrl) : null,
       sort: Number(sort),
     });
 
     return { success: true, data: system };
   }
 
-  async update(id, { code, name, status, sort }) {
+  async update(id, { code, name, status, isExternal, externalUrl, sort }) {
     const { ctx } = this;
     const system = await ctx.model.System.findByPk(Number(id));
     if (!system) {
@@ -62,6 +64,12 @@ class SystemService extends Service {
     }
     if (typeof status !== 'undefined') {
       system.status = Number(status);
+    }
+    if (typeof isExternal !== 'undefined') {
+      system.isExternal = Number(isExternal);
+    }
+    if (typeof externalUrl !== 'undefined') {
+      system.externalUrl = externalUrl ? String(externalUrl) : null;
     }
     if (typeof sort !== 'undefined') {
       system.sort = Number(sort);

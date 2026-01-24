@@ -10,6 +10,9 @@ importers:
       '@element-plus/icons-vue':
         specifier: ^2.3.2
         version: 2.3.2(vue@3.5.27(typescript@5.9.3))
+      '@zlt/zlt-admin-client':
+        specifier: link:/Users/lintao/zltadminlib/packages/@zlt/zlt-admin-client
+        version: link:../zltadminlib/packages/@zlt/zlt-admin-client
       axios:
         specifier: ^1.6.0
         version: 1.13.2
@@ -40,6 +43,9 @@ importers:
       element-plus:
         specifier: ^2.13.0
         version: 2.13.1(vue@3.5.27(typescript@5.9.3))
+      inflection:
+        specifier: ^1.13.4
+        version: 1.13.4
       js-cookies:
         specifier: ^1.0.4
         version: 1.0.4

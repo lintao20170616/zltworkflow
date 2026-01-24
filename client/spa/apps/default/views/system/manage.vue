@@ -26,6 +26,12 @@
             <el-switch :model-value="row.status === 1" :loading="row._changingStatus" @change="(val: boolean) => handleToggleStatus(row, val)" />
           </template>
         </el-table-column>
+        <el-table-column prop="isExternal" label="外部系统" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.isExternal === 1" type="warning">外部系统</el-tag>
+            <el-tag v-else type="info">内部系统</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="updatedAt" label="更新时间" width="180" />
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
@@ -49,6 +55,12 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-switch v-model="formStatusSwitch" />
+        </el-form-item>
+        <el-form-item label="外部系统" prop="isExternal">
+          <el-switch v-model="formIsExternalSwitch" />
+        </el-form-item>
+        <el-form-item v-if="form.isExternal === 1" label="外部URL" prop="externalUrl">
+          <el-input v-model="form.externalUrl" placeholder="请输入外部系统URL，如：https://example.com" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -80,11 +92,13 @@ const dialogMode = ref<'create' | 'edit'>('create');
 const editingId = ref<number | null>(null);
 
 const formRef = ref();
-const form = reactive<{ code: string; name: string; sort: number; status: number }>({
+const form = reactive<{ code: string; name: string; sort: number; status: number; isExternal: number; externalUrl: string | null }>({
   code: '',
   name: '',
   sort: 0,
   status: 1,
+  isExternal: 0,
+  externalUrl: null,
 });
 
 const formStatusSwitch = computed({
@@ -94,9 +108,39 @@ const formStatusSwitch = computed({
   },
 });
 
+const formIsExternalSwitch = computed({
+  get: () => form.isExternal === 1,
+  set: (val: boolean) => {
+    form.isExternal = val ? 1 : 0;
+    if (!val) {
+      form.externalUrl = null;
+    }
+  },
+});
+
 const rules = {
   code: [{ required: true, message: '请输入系统编码', trigger: 'blur' }],
   name: [{ required: true, message: '请输入系统名称', trigger: 'blur' }],
+  externalUrl: [
+    {
+      validator: (_rule: any, value: string | null, callback: (error?: Error) => void) => {
+        if (form.isExternal === 1) {
+          if (!value || !String(value).trim()) {
+            callback(new Error('外部系统必须填写外部系统URL'));
+            return;
+          }
+          try {
+            new URL(value);
+          } catch {
+            callback(new Error('请输入有效的URL地址'));
+            return;
+          }
+        }
+        callback();
+      },
+      trigger: 'blur',
+    },
+  ],
 } as const;
 
 const loadList = async () => {
@@ -119,6 +163,8 @@ const resetForm = () => {
   form.name = '';
   form.sort = 0;
   form.status = 1;
+  form.isExternal = 0;
+  form.externalUrl = null;
 };
 
 const openCreate = () => {
@@ -135,6 +181,8 @@ const openEdit = (row: SystemItem) => {
   form.name = row.name;
   form.sort = row.sort;
   form.status = row.status;
+  form.isExternal = row.isExternal ?? 0;
+  form.externalUrl = row.externalUrl ?? null;
   dialogVisible.value = true;
 };
 
@@ -149,6 +197,8 @@ const handleSubmit = async () => {
         name: form.name,
         sort: form.sort,
         status: form.status,
+        isExternal: form.isExternal,
+        externalUrl: form.externalUrl,
       });
       ElMessage.success('创建成功');
     } else if (editingId.value) {
@@ -156,6 +206,8 @@ const handleSubmit = async () => {
         name: form.name,
         sort: form.sort,
         status: form.status,
+        isExternal: form.isExternal,
+        externalUrl: form.externalUrl,
       });
       ElMessage.success('更新成功');
     }

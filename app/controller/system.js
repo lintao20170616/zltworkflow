@@ -27,13 +27,18 @@ class SystemController extends Controller {
       return;
     }
     try {
-      const { code, name, status = 1, sort = 0 } = ctx.request.body || {};
+      const { code, name, status = 1, isExternal = 0, externalUrl, sort = 0 } = ctx.request.body || {};
       if (!code || !String(code).trim() || !name || !String(name).trim()) {
         ctx.body = { code: 400, message: '系统编码和系统名称不能为空', data: null };
         ctx.status = 400;
         return;
       }
-      const result = await ctx.service.system.create({ code, name, status, sort });
+      if (Number(isExternal) === 1 && (!externalUrl || !String(externalUrl).trim())) {
+        ctx.body = { code: 400, message: '外部系统必须填写外部系统URL', data: null };
+        ctx.status = 400;
+        return;
+      }
+      const result = await ctx.service.system.create({ code, name, status, isExternal, externalUrl, sort });
       if (!result.success) {
         ctx.body = { code: 400, message: result.message, data: null };
         ctx.status = 400;
@@ -56,8 +61,13 @@ class SystemController extends Controller {
     }
     try {
       const { id } = ctx.params;
-      const { code, name, status, sort } = ctx.request.body || {};
-      const result = await ctx.service.system.update(id, { code, name, status, sort });
+      const { code, name, status, isExternal, externalUrl, sort } = ctx.request.body || {};
+      if (typeof isExternal !== 'undefined' && Number(isExternal) === 1 && (!externalUrl || !String(externalUrl).trim())) {
+        ctx.body = { code: 400, message: '外部系统必须填写外部系统URL', data: null };
+        ctx.status = 400;
+        return;
+      }
+      const result = await ctx.service.system.update(id, { code, name, status, isExternal, externalUrl, sort });
       if (!result.success) {
         ctx.body = { code: 400, message: result.message, data: null };
         ctx.status = 400;

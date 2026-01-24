@@ -29,6 +29,19 @@ module.exports = (app) => {
         defaultValue: 1,
         comment: '状态：1-启用，0-禁用',
       },
+      isExternal: {
+        type: TINYINT,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'is_external',
+        comment: '是否外部系统：1-是，0-否',
+      },
+      externalUrl: {
+        type: STRING(512),
+        allowNull: true,
+        field: 'external_url',
+        comment: '外部系统URL（当is_external=1时使用）',
+      },
       sort: {
         type: INTEGER,
         allowNull: false,

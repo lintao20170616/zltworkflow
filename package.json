@@ -89,6 +89,7 @@
     "egg-redis": "^2.6.1",
     "egg-sequelize": "6.0.0",
     "egg-session-redis": "^2.1.0",
+    "inflection": "^1.13.4",
     "egg-view-nunjucks": "^2.3.0",
     "element-plus": "^2.13.0",
     "js-cookies": "^1.0.4",
@@ -99,6 +100,7 @@
     "sequelize": "6.37.1",
     "umi-request": "^1.4.0",
     "vue": "^3.5.26",
-    "vue-router": "^4.4.5"
+    "vue-router": "^4.4.5",
+    "@zlt/zlt-admin-client": "link:/Users/lintao/zltadminlib/packages/@zlt/zlt-admin-client"
   }
 }

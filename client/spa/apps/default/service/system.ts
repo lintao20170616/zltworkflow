@@ -5,6 +5,8 @@ export interface SystemItem {
   code: string;
   name: string;
   status: number;
+  isExternal: number;
+  externalUrl?: string | null;
   sort: number;
   createdAt: string;
   updatedAt: string;
@@ -19,6 +21,8 @@ export interface SystemCreateRequest {
   code: string;
   name: string;
   status?: number;
+  isExternal?: number;
+  externalUrl?: string | null;
   sort?: number;
 }
 
@@ -26,6 +30,8 @@ export interface SystemUpdateRequest {
   code?: string;
   name?: string;
   status?: number;
+  isExternal?: number;
+  externalUrl?: string | null;
   sort?: number;
 }
 

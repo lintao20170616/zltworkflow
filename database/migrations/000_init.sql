@@ -19,9 +19,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
-INSERT INTO `users` (`username`, `password`, `email`, `status`) 
-VALUES ('admin', '$2a$10$AuhpyHd4rVYacMJU0lrw0OiWeJe5XyM3zHSIZ36IvBGJV53LS5N1a', 'admin@example.com', 1);
-
 -- 创建角色表
 CREATE TABLE IF NOT EXISTS `roles` (
   `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '角色ID',
@@ -34,9 +31,9 @@ CREATE TABLE IF NOT EXISTS `roles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色表';
 
 -- 插入测试角色
-INSERT INTO `roles` (`name`, `description`) VALUES ('admin', '管理员');
-INSERT INTO `roles` (`name`, `description`) VALUES ('user', '普通用户');
-INSERT INTO `roles` (`name`, `description`) VALUES ('guest', '访客');
+INSERT IGNORE INTO `roles` (`name`, `description`) VALUES ('admin', '管理员');
+INSERT IGNORE INTO `roles` (`name`, `description`) VALUES ('user', '普通用户');
+INSERT IGNORE INTO `roles` (`name`, `description`) VALUES ('guest', '访客');
 
 -- 创建用户角色关联表
 CREATE TABLE IF NOT EXISTS `user_roles` (
@@ -54,5 +51,5 @@ CREATE TABLE IF NOT EXISTS `user_roles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户角色关联表';
 
 -- 插入测试用户角色关联
-INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES (1, 2);
-INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES (1, 3);
+INSERT IGNORE INTO `user_roles` (`user_id`, `role_id`) VALUES (1, 2);
+INSERT IGNORE INTO `user_roles` (`user_id`, `role_id`) VALUES (1, 3);
