@@ -7,6 +7,9 @@ import pinia from './store';
 import './styles/style.less';
 import './styles/theme.less';
 import App from './App.vue';
+import client from '@zlt/zlt-admin-client';
+
+client.initShellSystem();
 
 const app = createApp(App);
 

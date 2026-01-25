@@ -74,6 +74,8 @@ export interface SystemMenuTreeItem {
   code: string;
   name: string;
   title: string;
+  isExternal?: number;
+  externalUrl?: string | null;
   children: MenuTreeItem[];
 }
 

@@ -3,19 +3,15 @@ import type { RouteRecordRaw } from 'vue-router';
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/',
-    redirect: '/layout',
-  },
-  {
     path: '/login',
     name: 'Login',
     component: () => import('../views/auth/login.vue'),
     meta: { requiresAuth: false },
   },
   {
-    path: '/layout',
+    path: '/',
     component: () => import('../components/Layout.vue'),
-    redirect: '/layout/dashboard',
+    redirect: '/dashboard',
     meta: { requiresAuth: true },
     children: [
       {
@@ -47,6 +43,11 @@ const routes: RouteRecordRaw[] = [
         name: 'MenuManage',
         component: () => import('../views/menu/manage.vue'),
         meta: { requiresAuth: true },
+      },
+      {
+        path: `/:systemId/:pathMatch(.*)+`,
+        name: 'Iframe',
+        component: () => import('../components/IframeView.vue'),
       },
     ],
   },

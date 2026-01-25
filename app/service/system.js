@@ -214,6 +214,8 @@ class SystemService extends Service {
         code: sys.code,
         name: sys.name,
         title: sys.name,
+        isExternal: sys.isExternal || 0,
+        externalUrl: sys.externalUrl || null,
         children: buildMenuTree(systemMenus),
       };
     });

@@ -4,10 +4,10 @@
       <div class="logo">
         <h2>ZLT Admin</h2>
       </div>
-      <el-menu :default-active="activeMenu" router class="sidebar-menu" :ellipsis="false">
-        <el-menu-item v-for="item in menuList" :key="item.id" :index="item.path" :route="{ name: item.name }">
+      <el-menu :default-active="activeMenu" class="sidebar-menu" :ellipsis="false" @select="handleMenuSelect">
+        <el-menu-item v-for="item in menuList" :key="item.id" :index="item.path">
           <el-icon>
-            <component :is="getIcon(item.icon)" />
+            <component :is="getIcon(item.icon ?? null)" />
           </el-icon>
           <template #title>{{ item.title }}</template>
         </el-menu-item>
@@ -67,6 +67,17 @@ const handleChangeSystem = (value: string) => {
   currentSystemId.value = Number(value);
 };
 
+const handleMenuSelect = (menuPath: string) => {
+  const systemInfo = getSystemByMenuPath(menuPath);
+
+  if (systemInfo && systemInfo.isExternal === 1) {
+    const externalPath = `/${systemInfo.code}${menuPath}`;
+    router.push(externalPath);
+  } else {
+    router.push(menuPath);
+  }
+};
+
 const menuList = computed(() => {
   if (currentSystemId.value && systemList.value.length > 0) {
     return systemList.value.find((sys) => sys.id === currentSystemId.value)?.children || [];
@@ -74,11 +85,23 @@ const menuList = computed(() => {
   return [];
 });
 
-const activeMenu = computed(() => {
-  return route.path;
+const currentTab = computed(() => {
+  return tabs.value.find((t) => t.fullPath === activeTab.value);
 });
 
-const getIcon = (iconName: string) => {
+const activeMenu = computed(() => {
+  const currentPath = route.path;
+
+  if (route.name === 'Iframe' && route.params.systemId && route.params.pathMatch) {
+    const menuPath = `/${Array.isArray(route.params.pathMatch) ? route.params.pathMatch.join('/') : route.params.pathMatch}`;
+    return menuPath;
+  }
+
+  return currentPath;
+});
+
+const getIcon = (iconName: string | null | undefined) => {
+  if (!iconName) return Odometer;
   const iconMap: Record<string, any> = {
     Odometer,
     User,
@@ -95,6 +118,9 @@ type LayoutTab = {
   path: string;
   title: string;
   closable: boolean;
+  systemId?: number;
+  isExternal?: number;
+  externalUrl?: string | null;
 };
 
 const DASHBOARD_PATH = '/layout/dashboard';
@@ -114,6 +140,28 @@ const getMenuTitleByPath = (items: any[], path: string): string | undefined => {
   return undefined;
 };
 
+const getMenuByPath = (items: any[], path: string): any | undefined => {
+  for (const item of items) {
+    if (item?.path === path) return item;
+    const children = item?.children;
+    if (Array.isArray(children) && children.length > 0) {
+      const found = getMenuByPath(children, path);
+      if (found) return found;
+    }
+  }
+  return undefined;
+};
+
+const getSystemByMenuPath = (path: string) => {
+  for (const sys of systemList.value) {
+    const menu = getMenuByPath(sys.children || [], path);
+    if (menu) {
+      return sys;
+    }
+  }
+  return null;
+};
+
 const getAllMenuItems = computed(() => {
   const allItems: any[] = [];
   menuStore.systemList.forEach((sys) => {
@@ -125,6 +173,40 @@ const getAllMenuItems = computed(() => {
 });
 
 const upsertTab = (r: RouteLocationNormalizedLoaded) => {
+  if (r.name === 'Iframe' && r.params.systemId && r.params.pathMatch) {
+    const systemCode = String(r.params.systemId);
+    const menuPath = `/${Array.isArray(r.params.pathMatch) ? r.params.pathMatch.join('/') : r.params.pathMatch}`;
+    const system = systemList.value.find((sys) => sys.code === systemCode);
+
+    if (system && system.isExternal === 1) {
+      const menuItem = getMenuByPath(system.children || [], menuPath);
+      const title = menuItem?.title || system.name;
+      const closable = true;
+      const existing = tabs.value.find((t) => t.fullPath === r.fullPath);
+
+      if (existing) {
+        existing.title = title;
+        existing.path = menuPath;
+        existing.closable = closable;
+        existing.systemId = system.id;
+        existing.isExternal = system.isExternal || 0;
+        existing.externalUrl = system.externalUrl || null;
+        return;
+      }
+
+      tabs.value.push({
+        fullPath: r.fullPath,
+        path: menuPath,
+        title,
+        closable,
+        systemId: system.id,
+        isExternal: system.isExternal || 0,
+        externalUrl: system.externalUrl || null,
+      });
+    }
+    return;
+  }
+
   if (!r?.fullPath?.startsWith('/layout')) return;
 
   const titleFromMenu = getMenuTitleByPath(getAllMenuItems.value, r.path);
@@ -133,10 +215,18 @@ const upsertTab = (r: RouteLocationNormalizedLoaded) => {
 
   const closable = r.path !== DASHBOARD_PATH;
   const existing = tabs.value.find((t) => t.fullPath === r.fullPath);
+
+  const systemInfo = getSystemByMenuPath(r.path);
+
   if (existing) {
     existing.title = title;
     existing.path = r.path;
     existing.closable = closable;
+    if (systemInfo) {
+      existing.systemId = systemInfo.id;
+      existing.isExternal = systemInfo.isExternal || 0;
+      existing.externalUrl = systemInfo.externalUrl || null;
+    }
     return;
   }
 
@@ -145,6 +235,9 @@ const upsertTab = (r: RouteLocationNormalizedLoaded) => {
     path: r.path,
     title,
     closable,
+    systemId: systemInfo?.id,
+    isExternal: systemInfo?.isExternal || 0,
+    externalUrl: systemInfo?.externalUrl || null,
   });
 };
 
@@ -290,5 +383,11 @@ onMounted(() => {});
   background-color: var(--main-content-bg);
   padding: var(--main-content-padding);
   overflow-y: auto;
+
+  .iframe-container {
+    width: 100%;
+    height: 100%;
+    min-height: calc(100vh - var(--header-height) - var(--tabs-header-height) - var(--main-content-padding) * 2);
+  }
 }
 </style>

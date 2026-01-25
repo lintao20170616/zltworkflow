@@ -11,8 +11,8 @@
     </div>
     <iframe
       ref="iframeRef"
-      :src="src"
-      :title="title"
+      :src="iframeSrc"
+      :title="iframeTitle"
       class="iframe-view__frame"
       :class="{ 'iframe-view__frame--hidden': loading || error }"
       frameborder="0"
@@ -24,11 +24,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { Loading, WarningFilled } from '@element-plus/icons-vue';
+import { useMenuStore } from '../store';
 
 interface Props {
-  src: string;
+  src?: string;
   title?: string;
   fullscreen?: boolean;
 }
@@ -36,6 +38,75 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   title: '嵌入页面',
   fullscreen: false,
+});
+
+const route = useRoute();
+const menuStore = useMenuStore();
+
+const iframeSrc = computed(() => {
+  if (props.src) {
+    return props.src;
+  }
+
+  if (route.name === 'Iframe' && route.params.systemId && route.params.pathMatch) {
+    const systemCode = String(route.params.systemId);
+    const menuPath = `/${Array.isArray(route.params.pathMatch) ? route.params.pathMatch.join('/') : route.params.pathMatch}`;
+    const system = menuStore.systemList.find((sys) => sys.code === systemCode);
+
+    if (system && system.externalUrl) {
+      const baseUrl = system.externalUrl.trim();
+      const path = menuPath.trim();
+
+      if (baseUrl && path) {
+        const baseUrlEndsWithSlash = baseUrl.endsWith('/');
+        const pathStartsWithSlash = path.startsWith('/');
+
+        if (baseUrlEndsWithSlash && pathStartsWithSlash) {
+          return baseUrl + path.slice(1);
+        } else if (!baseUrlEndsWithSlash && !pathStartsWithSlash) {
+          return baseUrl + '/' + path;
+        } else {
+          return baseUrl + path;
+        }
+      }
+    }
+  }
+
+  return '';
+});
+
+const iframeTitle = computed(() => {
+  if (props.title && props.title !== '嵌入页面') {
+    return props.title;
+  }
+
+  if (route.name === 'Iframe' && route.params.systemId && route.params.pathMatch) {
+    const systemCode = String(route.params.systemId);
+    const menuPath = `/${Array.isArray(route.params.pathMatch) ? route.params.pathMatch.join('/') : route.params.pathMatch}`;
+    const system = menuStore.systemList.find((sys) => sys.code === systemCode);
+
+    if (system) {
+      const getMenuByPath = (items: any[], path: string): any | undefined => {
+        for (const item of items) {
+          if (item?.path === path) return item;
+          const children = item?.children;
+          if (Array.isArray(children) && children.length > 0) {
+            const found = getMenuByPath(children, path);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+
+      const menuItem = getMenuByPath(system.children || [], menuPath);
+      if (menuItem) {
+        return menuItem.title;
+      }
+      return system.name;
+    }
+  }
+
+  return '嵌入页面';
 });
 
 const iframeRef = ref<HTMLIFrameElement | null>(null);
@@ -56,7 +127,7 @@ const handleRetry = () => {
   if (!iframeRef.value) return;
   loading.value = true;
   error.value = '';
-  iframeRef.value.src = props.src;
+  iframeRef.value.src = iframeSrc.value;
 };
 
 const handleMessage = (event: MessageEvent) => {
@@ -71,9 +142,9 @@ const sendMessage = (data: any) => {
 };
 
 watch(
-  () => props.src,
+  () => iframeSrc.value,
   () => {
-    if (props.src) {
+    if (iframeSrc.value) {
       loading.value = true;
       error.value = '';
     }
