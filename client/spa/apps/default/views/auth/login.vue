@@ -141,7 +141,7 @@ const handleRegister = async () => {
         userStore.login(res.userInfo);
         ElMessage.success('注册成功，已自动登录');
         await nextTick();
-        await router.push({ path: '/layout' });
+        await router.push({ path: '/dashboard' });
       } else {
         ElMessage.error('注册失败');
       }

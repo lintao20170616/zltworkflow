@@ -51,6 +51,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'language',
+        name: 'LanguageManage',
+        component: () => import('../views/language/index.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: `/:systemId/:pathMatch(.*)+`,
         name: 'Iframe',
         component: () => import('../components/IframeView.vue'),

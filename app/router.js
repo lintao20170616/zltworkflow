@@ -30,6 +30,13 @@ module.exports = (app) => {
   router.delete('/api/chatbot/conversations/:id', controller.chatbot.deleteConversation);
   router.get('/api/chatbot/test-ollama', controller.chatbot.testOllama);
 
+  // 语言管理接口
+  router.get('/api/language/list', controller.language.list);
+  router.post('/api/language', controller.language.create);
+  router.put('/api/language/:id', controller.language.update);
+  router.delete('/api/language/:id', controller.language.delete);
+  router.patch('/api/language/:id/status', controller.language.updateStatus);
+
   router.get('/error', controller.pages.errorPage);
   // 通用匹配，渲染页面
   router.get('/**', controller.pages.index);
