@@ -119,7 +119,7 @@ type LayoutTab = {
   externalUrl?: string | null;
 };
 
-const DASHBOARD_PATH = '/layout/dashboard';
+const DASHBOARD_PATH = '/dashboard';
 
 const tabs = ref<LayoutTab[]>([]);
 const activeTab = ref('');
@@ -260,10 +260,19 @@ const handleTabRemove = (name: string) => {
   const isRemovingActive = name === route.fullPath;
   tabs.value.splice(idx, 1);
 
+  if (tabs.value.length === 0) {
+    router.push(DASHBOARD_PATH);
+    return;
+  }
+
   if (!isRemovingActive) return;
 
   const next = tabs.value[idx] || tabs.value[idx - 1] || tabs.value[0];
-  if (next?.fullPath) router.push(next.fullPath);
+  if (next?.fullPath) {
+    router.push(next.fullPath);
+  } else {
+    router.push(DASHBOARD_PATH);
+  }
 };
 
 const handleCommand = async (command: string) => {
