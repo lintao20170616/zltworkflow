@@ -2,11 +2,17 @@ const path = require('path');
 
 module.exports = (appInfo) => {
   const config = {};
-  config.keys = appInfo.name + '_1677811477866_8821';
+  config.keys = 'zltworkflow_1677811477866_8821'; // 使用固定密钥,父子系统cookie共享，session共享，解密的时候需要使用相同的密钥，不然sessionRedis取不到用户信息
   config.view = {
     cache: true,
     defaultViewEngine: 'nunjucks',
     root: path.join(appInfo.baseDir, 'app/public'),
+  };
+
+  config.security = {
+    xframe: {
+      enable: false,
+    },
   };
 
   config.middleware = ['oauth'];

@@ -111,7 +111,7 @@ const handleLogin = async () => {
         userStore.login(res.userInfo);
         ElMessage.success('登录成功');
         await nextTick();
-        await router.push({ path: '/layout' });
+        await router.push({ path: '/dashboard' });
       } else {
         ElMessage.error('登录失败');
       }

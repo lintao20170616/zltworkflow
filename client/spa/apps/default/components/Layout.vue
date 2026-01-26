@@ -85,10 +85,6 @@ const menuList = computed(() => {
   return [];
 });
 
-const currentTab = computed(() => {
-  return tabs.value.find((t) => t.fullPath === activeTab.value);
-});
-
 const activeMenu = computed(() => {
   const currentPath = route.path;
 
@@ -206,8 +202,6 @@ const upsertTab = (r: RouteLocationNormalizedLoaded) => {
     }
     return;
   }
-
-  if (!r?.fullPath?.startsWith('/layout')) return;
 
   const titleFromMenu = getMenuTitleByPath(getAllMenuItems.value, r.path);
   const titleFromRoute = typeof r.meta?.title === 'string' ? (r.meta.title as string) : undefined;
