@@ -4,6 +4,7 @@ import enUS from './locales/en-US.json';
 import defaultJson from './locales/default.json';
 
 let defaultMessages: Record<string, string> = {};
+
 try {
   defaultMessages = defaultJson || {};
 } catch (e) {
@@ -11,13 +12,13 @@ try {
 }
 
 const messages = {
-  'zh-CN': zhCN,
-  'en-US': enUS,
+  'zh-CN': zhCN || defaultMessages,
+  'en-US': enUS || defaultMessages,
 };
 
 const i18n = createI18n({
   legacy: false,
-  locale: 'zh-CN',
+  locale: 'en-US',
   fallbackLocale: 'zh-CN',
   messages,
 });
