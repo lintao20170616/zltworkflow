@@ -262,3 +262,18 @@ export const backfillTranslationTask = async (id: number): Promise<{ successCoun
 export const pushDefaultJson = async (data: PushDefaultJsonRequest): Promise<PushDefaultJsonResponse> => {
   return http.api.post('/translation/push-default-json', { data });
 };
+
+export const translateWithAI = async (translationId: number): Promise<TranslationItem> => {
+  return http.api.post(`/translation/contents/${translationId}/translate-with-ai`);
+};
+
+export interface BatchTranslateWithAIResponse {
+  successCount: number;
+  failCount: number;
+  totalCount: number;
+  errors: string[];
+}
+
+export const batchTranslateWithAI = async (taskId: number): Promise<BatchTranslateWithAIResponse> => {
+  return http.api.post(`/translation/tasks/${taskId}/batch-translate-with-ai`);
+};

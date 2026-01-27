@@ -312,6 +312,285 @@ class TranslationTaskService extends Service {
     };
   }
 
+  async batchTranslateWithAI(taskId) {
+    const { ctx } = this;
+    const transaction = await ctx.model.transaction();
+    const Op = ctx.app.Sequelize.Op;
+    try {
+      // 1. 获取任务信息和项目信息
+      const task = await ctx.model.TranslationTask.findByPk(Number(taskId), {
+        include: [
+          {
+            model: ctx.model.TranslationProject,
+            as: 'project',
+            include: [
+              {
+                model: ctx.model.Language,
+                as: 'sourceLanguage',
+                attributes: ['id', 'code', 'name', 'nativeName'],
+              },
+            ],
+          },
+        ],
+        transaction,
+      });
+
+      if (!task) {
+        await transaction.rollback();
+        return { success: false, message: '任务不存在' };
+      }
+
+      if (!ctx.service.ollama || !ctx.service.ollama.isEnabled()) {
+        await transaction.rollback();
+        return { success: false, message: 'Ollama服务未启用' };
+      }
+
+      // 2. 获取所有待翻译内容（状态为1-待翻译或2-翻译中）
+
+      const translations = await ctx.model.Translation.findAll({
+        where: {
+          taskId: Number(taskId),
+          status: { [Op.in]: [1, 2] },
+        },
+        include: [
+          {
+            model: ctx.model.Language,
+            as: 'language',
+            attributes: ['id', 'code', 'name', 'nativeName'],
+          },
+        ],
+        transaction,
+      });
+
+      if (translations.length === 0) {
+        await transaction.commit();
+        return { success: true, data: { successCount: 0, failCount: 0, errors: [] } };
+      }
+
+      const project = task.project;
+      const sourceLanguage = project.sourceLanguage;
+      if (!sourceLanguage) {
+        await transaction.rollback();
+        return { success: false, message: '项目源语言信息不完整' };
+      }
+
+      // 3. 按目标语言分组待翻译内容
+      const sourceLangName = sourceLanguage.nativeName || sourceLanguage.name || sourceLanguage.code;
+      const translationsByLanguage = {};
+
+      for (const translation of translations) {
+        const targetLanguage = translation.language;
+        if (!targetLanguage || !translation.sourceText || !translation.sourceText.trim()) {
+          continue;
+        }
+
+        const langId = targetLanguage.id;
+        if (!translationsByLanguage[langId]) {
+          translationsByLanguage[langId] = {
+            language: targetLanguage,
+            items: [],
+          };
+        }
+        translationsByLanguage[langId].items.push(translation);
+      }
+
+      // 4. 按语言组进行批量翻译
+      let successCount = 0;
+      let failCount = 0;
+      const errors = [];
+      const totalCount = translations.length;
+      const updateBatches = {
+        success: [],
+        fail: [],
+      };
+
+      for (const langId in translationsByLanguage) {
+        const langGroup = translationsByLanguage[langId];
+        const targetLanguage = langGroup.language;
+        const isTargetChinese = targetLanguage.code && targetLanguage.code.startsWith('zh');
+        const targetLangName = targetLanguage.nativeName || targetLanguage.name || targetLanguage.code;
+        const items = langGroup.items;
+
+        // 4.1 如果目标语言是中文，直接复制源文本
+        if (isTargetChinese) {
+          for (const translation of items) {
+            updateBatches.success.push({
+              id: translation.id,
+              translatedText: translation.sourceText.trim(),
+              status: 3,
+              translatorId: 0,
+            });
+            successCount++;
+          }
+          continue;
+        }
+
+        // 4.2 调用AI批量翻译
+        try {
+          // 构建翻译项列表
+          const translationItems = items.map((item, index) => ({
+            id: item.id,
+            key: item.key,
+            index: index + 1,
+            text: item.sourceText.trim(),
+          }));
+
+          const itemsText = translationItems.map((item) => `${item.index}. [${item.key}] ${item.text}`).join('\n');
+
+          // 根据源语言选择prompt语言
+          const prompt = `请将以下${sourceLangName}文本批量翻译成${targetLangName}。
+
+要求：
+1. 返回JSON格式，格式为：{"translations": [{"index": 1, "key": "xxx", "translation": "翻译结果"}, ...]}
+2. 保持原有的顺序和key
+3. 只返回翻译结果，不要添加任何解释或说明
+4. 确保返回的JSON格式正确，可以直接解析
+
+待翻译内容：
+${itemsText}
+
+请直接返回JSON，不要添加任何其他文字：`;
+
+          // 调用AI翻译
+          const response = await ctx.service.ollama.ollamaChat([{ role: 'user', content: prompt }], {
+            temperature: 0.3,
+            maxTokens: Math.max(4000, items.length * 100),
+          });
+
+          if (!response || !response.content) {
+            throw new Error('Ollama返回结果为空');
+          }
+
+          // 解析AI返回的JSON结果
+          let resultData;
+          try {
+            const content = response.content.trim();
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              resultData = JSON.parse(jsonMatch[0]);
+            } else {
+              throw new Error('无法解析JSON格式');
+            }
+          } catch (parseError) {
+            ctx.logger.error('[TranslationTaskService] batchTranslateWithAI JSON parse error:', parseError, 'Response:', response.content);
+            throw new Error('AI返回结果格式错误，无法解析JSON');
+          }
+
+          if (!resultData.translations || !Array.isArray(resultData.translations)) {
+            throw new Error('AI返回结果格式错误，缺少translations数组');
+          }
+
+          // 构建翻译结果映射表
+          const translationResults = {};
+          for (const result of resultData.translations) {
+            if (result.index && result.translation) {
+              translationResults[result.index] = result.translation.trim();
+            }
+          }
+
+          // 匹配翻译结果并准备批量更新
+          for (const translation of items) {
+            const itemIndex = translationItems.findIndex((item) => item.id === translation.id) + 1;
+            const translatedText = translationResults[itemIndex];
+
+            if (translatedText) {
+              updateBatches.success.push({
+                id: translation.id,
+                translatedText,
+                status: 3,
+                translatorId: 0,
+              });
+              successCount++;
+            } else {
+              updateBatches.fail.push({
+                id: translation.id,
+                status: 1,
+              });
+              failCount++;
+              errors.push(`翻译ID ${translation.id} (key: ${translation.key}): AI返回结果中缺少该条翻译`);
+            }
+          }
+        } catch (error) {
+          // AI翻译失败，将所有项标记为失败
+          for (const translation of items) {
+            updateBatches.fail.push({
+              id: translation.id,
+              status: 1,
+            });
+            failCount++;
+            errors.push(`翻译ID ${translation.id} (key: ${translation.key}): ${error.message}`);
+          }
+          ctx.logger.error(`[TranslationTaskService] batchTranslateWithAI error for language ${langId}:`, error);
+        }
+      }
+
+      // 5.1 批量更新成功的翻译记录（使用并行更新减少总耗时）
+      if (updateBatches.success.length > 0) {
+        await Promise.all(
+          updateBatches.success.map((item) =>
+            ctx.model.Translation.update(
+              {
+                translatedText: item.translatedText,
+                status: item.status,
+                translatorId: item.translatorId,
+              },
+              {
+                where: { id: item.id },
+                transaction,
+              },
+            ),
+          ),
+        );
+      }
+
+      // 5.2 批量更新失败的翻译记录（一次性更新所有失败项）
+      if (updateBatches.fail.length > 0) {
+        const failIds = updateBatches.fail.map((item) => item.id);
+        await ctx.model.Translation.update(
+          { status: 1 },
+          {
+            where: { id: { [Op.in]: failIds } },
+            transaction,
+          },
+        );
+      }
+
+      // 6. 更新任务统计信息
+      const completedCount = await ctx.model.Translation.count({
+        where: {
+          taskId: Number(taskId),
+          status: 3,
+        },
+        transaction,
+      });
+
+      const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+      await task.update(
+        {
+          textCount: completedCount,
+          progress,
+        },
+        { transaction },
+      );
+
+      await transaction.commit();
+
+      return {
+        success: true,
+        data: {
+          successCount,
+          failCount,
+          totalCount,
+          errors: errors.slice(0, 20),
+        },
+      };
+    } catch (error) {
+      await transaction.rollback();
+      ctx.logger.error('[TranslationTaskService] batchTranslateWithAI error:', error);
+      return { success: false, message: `批量翻译失败: ${error.message}` };
+    }
+  }
+
   async delete(id) {
     const { ctx } = this;
     const task = await ctx.model.TranslationTask.findByPk(Number(id));

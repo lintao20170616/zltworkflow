@@ -122,6 +122,169 @@ class TranslationService extends Service {
     return { success: true };
   }
 
+  async translateWithAI(translationId) {
+    const { ctx } = this;
+    try {
+      const translation = await ctx.model.Translation.findByPk(Number(translationId), {
+        include: [
+          {
+            model: ctx.model.TranslationProject,
+            as: 'project',
+            include: [
+              {
+                model: ctx.model.Language,
+                as: 'sourceLanguage',
+                attributes: ['id', 'code', 'name', 'nativeName'],
+              },
+            ],
+          },
+          {
+            model: ctx.model.Language,
+            as: 'language',
+            attributes: ['id', 'code', 'name', 'nativeName'],
+          },
+        ],
+      });
+
+      if (!translation) {
+        return { success: false, message: '翻译内容不存在' };
+      }
+
+      if (!translation.sourceText || !translation.sourceText.trim()) {
+        return { success: false, message: '源文本为空，无法翻译' };
+      }
+
+      const project = translation.project;
+      if (!project) {
+        return { success: false, message: '项目不存在' };
+      }
+
+      const sourceLanguage = project.sourceLanguage;
+      const targetLanguage = translation.language;
+
+      if (!sourceLanguage || !targetLanguage) {
+        return { success: false, message: '语言信息不完整' };
+      }
+
+      if (!ctx.service.ollama || !ctx.service.ollama.isEnabled()) {
+        return { success: false, message: 'Ollama服务未启用' };
+      }
+
+      const sourceLangName = sourceLanguage.nativeName || sourceLanguage.name || sourceLanguage.code;
+      const targetLangName = targetLanguage.nativeName || targetLanguage.name || targetLanguage.code;
+      const sourceText = translation.sourceText.trim();
+
+      const prompt = `请将以下${sourceLangName}文本翻译成${targetLangName}，只返回翻译结果，不要添加任何解释或说明：
+
+${sourceText}`;
+
+      translation.status = 2;
+      await translation.save();
+
+      try {
+        const response = await ctx.service.ollama.ollamaChat([{ role: 'user', content: prompt }], {
+          temperature: 0.3,
+          maxTokens: 2000,
+        });
+
+        if (!response || !response.content) {
+          throw new Error('Ollama返回结果为空');
+        }
+
+        const translatedText = response.content.trim();
+
+        translation.translatedText = translatedText;
+        translation.status = 3;
+        translation.translatorId = 0;
+        await translation.save();
+
+        return { success: true, data: translation };
+      } catch (error) {
+        translation.status = 1;
+        await translation.save();
+        ctx.logger.error('[TranslationService] translateWithAI Ollama error:', error);
+        return { success: false, message: `AI翻译失败: ${error.message}` };
+      }
+    } catch (error) {
+      ctx.logger.error('[TranslationService] translateWithAI error:', error);
+      return { success: false, message: `翻译失败: ${error.message}` };
+    }
+  }
+
+  async pullTranslations(projectId) {
+    const { ctx } = this;
+    const Op = ctx.app.Sequelize.Op;
+
+    try {
+      const project = await ctx.model.TranslationProject.findByPk(Number(projectId), {
+        include: [
+          {
+            model: ctx.model.Language,
+            as: 'sourceLanguage',
+            attributes: ['id', 'code', 'name', 'nativeName'],
+          },
+        ],
+      });
+
+      if (!project) {
+        return { success: false, message: '项目不存在' };
+      }
+
+      const targetLanguageIds = project.targetLanguageIds || [];
+      if (targetLanguageIds.length === 0) {
+        return { success: false, message: '项目未配置目标语言' };
+      }
+
+      const targetLanguages = await ctx.model.Language.findAll({
+        where: {
+          id: { [Op.in]: targetLanguageIds },
+        },
+        attributes: ['id', 'code', 'name', 'nativeName'],
+        order: [['sort', 'ASC']],
+      });
+
+      const result = {};
+      const statistics = {};
+
+      for (const targetLanguage of targetLanguages) {
+        const translations = await ctx.model.Translation.findAll({
+          where: {
+            projectId: Number(projectId),
+            languageId: targetLanguage.id,
+            status: 3,
+          },
+          attributes: ['key', 'translatedText'],
+        });
+
+        const translationMap = {};
+        for (const translation of translations) {
+          if (translation.key && translation.translatedText) {
+            translationMap[translation.key] = translation.translatedText;
+          }
+        }
+
+        result[targetLanguage.code] = translationMap;
+        statistics[targetLanguage.code] = {
+          languageName: targetLanguage.name,
+          languageCode: targetLanguage.code,
+          count: Object.keys(translationMap).length,
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          translations: result,
+          statistics,
+          projectName: project.name,
+        },
+      };
+    } catch (error) {
+      ctx.logger.error('[TranslationService] pullTranslations error:', error);
+      return { success: false, message: `拉取翻译内容失败: ${error.message}` };
+    }
+  }
+
   async pushDefaultJson(projectId, defaultJsonPath, defaultJsonData) {
     const { ctx } = this;
     const path = require('path');

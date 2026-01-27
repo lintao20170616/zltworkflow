@@ -205,6 +205,7 @@ const loadTranslationList = async () => {
       projectId: projectId.value,
       languageId: Number(activeTab.value),
       keyword: currentQuery.keyword || undefined,
+      status: 3,
       page: currentQuery.page || 1,
       pageSize: currentQuery.pageSize || 20,
     });

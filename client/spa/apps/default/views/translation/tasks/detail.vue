@@ -8,6 +8,9 @@
             <span style="margin-left: 16px; font-size: 16px; font-weight: bold">{{ taskDetail.taskNumber }}</span>
           </div>
           <div class="header-actions">
+            <el-button v-if="taskDetail.isBackfilled === 0" type="primary" :loading="batchTranslating" @click="handleBatchTranslateWithAI">{{
+              $t('批量AI翻译')
+            }}</el-button>
             <el-button v-if="taskDetail.isBackfilled === 0" type="success" :loading="backfilling" @click="handleBackfill">{{ $t('回填翻译结果') }}</el-button>
             <el-button :loading="loading" @click="loadDetail">{{ $t('刷新') }}</el-button>
           </div>
@@ -90,6 +93,7 @@ import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   backfillTranslationTask,
+  batchTranslateWithAI,
   getTranslationTaskDetail,
   getTranslationTaskTranslations,
   type TranslationItem,
@@ -102,6 +106,7 @@ const { t } = useI18n();
 const taskId = ref<number>(Number(route.params.id));
 const loading = ref(false);
 const backfilling = ref(false);
+const batchTranslating = ref(false);
 const taskDetail = ref<TranslationTaskDetail | null>(null);
 const activeTab = ref<string>('');
 const translationListMap = ref<Record<string, TranslationItem[]>>({});
@@ -198,6 +203,30 @@ const handleCurrentChange = (page: number) => {
   if (currentQuery) {
     currentQuery.page = page;
     loadTranslationList();
+  }
+};
+
+const handleBatchTranslateWithAI = async () => {
+  if (batchTranslating.value) return;
+  try {
+    await ElMessageBox.confirm(t('确认使用AI批量翻译该任务下的所有待翻译内容？'), t('提示'), { type: 'warning' });
+    batchTranslating.value = true;
+    const result = await batchTranslateWithAI(taskId.value);
+    ElMessage.success(t('批量AI翻译完成！成功 {success} 条，失败 {fail} 条', { success: result.successCount, fail: result.failCount }));
+    if (result.errors && result.errors.length > 0) {
+      console.warn('批量翻译错误:', result.errors);
+    }
+    await loadDetail();
+  } catch (error) {
+    if (error instanceof Error && error.message) {
+      if (error.message !== 'cancel') {
+        ElMessage.error(error.message);
+      }
+      return;
+    }
+    ElMessage.error(t('批量AI翻译失败'));
+  } finally {
+    batchTranslating.value = false;
   }
 };
 

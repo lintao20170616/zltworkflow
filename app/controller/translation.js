@@ -98,6 +98,52 @@ class TranslationController extends Controller {
     }
   }
 
+  async translateWithAI() {
+    const { ctx } = this;
+    if (!ctx.session.user?.id) {
+      ctx.body = { code: 401, message: '未登录', data: null };
+      ctx.status = 401;
+      return;
+    }
+    try {
+      const { id } = ctx.params;
+      const result = await ctx.service.translation.translateWithAI(id);
+      if (!result.success) {
+        ctx.body = { code: 400, message: result.message, data: null };
+        ctx.status = 400;
+        return;
+      }
+      ctx.body = { code: 0, message: 'AI翻译成功', data: result.data };
+    } catch (error) {
+      ctx.logger.error('[TranslationController] translateWithAI error:', error);
+      ctx.body = { code: 500, message: '服务器错误', data: null };
+      ctx.status = 500;
+    }
+  }
+
+  async pullTranslations() {
+    const { ctx } = this;
+    try {
+      const { projectId } = ctx.request.query;
+      if (!projectId) {
+        ctx.body = { code: 400, message: '项目ID不能为空', data: null };
+        ctx.status = 400;
+        return;
+      }
+      const result = await ctx.service.translation.pullTranslations(projectId);
+      if (!result.success) {
+        ctx.body = { code: 400, message: result.message, data: null };
+        ctx.status = 400;
+        return;
+      }
+      ctx.body = { code: 0, message: '拉取成功', data: result.data };
+    } catch (error) {
+      ctx.logger.error('[TranslationController] pullTranslations error:', error);
+      ctx.body = { code: 500, message: '服务器错误', data: null };
+      ctx.status = 500;
+    }
+  }
+
   async pushDefaultJson() {
     const { ctx } = this;
     try {

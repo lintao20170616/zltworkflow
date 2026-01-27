@@ -17,7 +17,8 @@
     "lint-staged": "lint-staged -p false",
     "migrate": "node scripts/run-migration.js",
     "i18n:scan": "node scripts/i18n-scanner.js",
-    "i18n:push": "node scripts/i18n-push.js"
+    "i18n:push": "node scripts/i18n-push.js",
+    "i18n:pull": "node scripts/i18n-pull.js"
   },
   "repository": {
     "type": "git",
