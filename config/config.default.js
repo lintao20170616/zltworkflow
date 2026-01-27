@@ -19,6 +19,21 @@ module.exports = (appInfo) => {
     },
   };
 
+  config.cluster = {
+    listen: {
+      timeout: 600000,
+    },
+  };
+
+  config.bodyParser = {
+    jsonLimit: '10mb',
+    formLimit: '10mb',
+    enableTypes: ['json', 'form', 'text'],
+    extendTypes: {
+      json: ['application/json'],
+    },
+  };
+
   config.middleware = ['oauth'];
 
   config.oauth = {

@@ -30,5 +30,19 @@
   "ebb6d803-ef17-4130-baf7-360e58d04502": "Create success",
   "26cff2ba-a4ee-429f-9629-f20f79a05a88": "Update success",
   "61b113c4-bbe2-4aef-b7a7-4233bd2896f4": "Hint",
-  "4e718d78-69e4-4288-8f1a-70508554a32b": "Failed to update language list"
+  "4e718d78-69e4-4288-8f1a-70508554a32b": "Failed to update language list",
+  "cc470f6f-1d25-4dd3-9387-86687f912eb2": "Load task details failed",
+  "1dd43fd2-9f64-4f92-8489-478ce711e6e6": "Load translation list failed",
+  "a127eb8c-6054-4d04-99e3-bbdb77a2c3f1": "Confirm to use AI batch translation for all待翻译的内容 under this task?",
+  "cec0f59f-efb1-4e1a-bbe5-db39902b5dc1": "Batch AI translation failed",
+  "cdeac254-87f9-4430-b451-89a7b966c625": "Confirm to fill back the translation results into the language file?",
+  "620a363c-add3-4950-aaa7-13497274d16f": "Fill back failed",
+  "d557a200-4cbf-42c6-ae67-2b8f31dc3c3c": "Translation task management",
+  "ca736300-d718-47d8-b7b5-b743efb6da29": "New task",
+  "ed8eacfe-612c-41bf-9b55-c1c1b6868c51": "View details",
+  "ff61f19f-283f-43ca-847b-ec39a7cd3991": "Edit task",
+  "d1e0538c-fda4-47a0-9824-7ff61a7bc911": "Select project",
+  "c53229f0-ede5-465e-99f4-d3a1c1d2e189": "Select state",
+  "82755c82-e1ae-44d4-989b-3f1ab7db310f": "Load project list failed",
+  "d6eb5d01-3c3f-4d81-bd5f-64f0f13d670e": "Load translation list failed"
 }
