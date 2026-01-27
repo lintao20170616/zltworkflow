@@ -51,10 +51,15 @@ module.exports = (app) => {
   router.delete('/api/translation/contents/:id', controller.translation.delete);
 
   router.get('/api/translation/tasks', controller.translationTask.list);
+  router.get('/api/translation/tasks/:id', controller.translationTask.getDetail);
   router.post('/api/translation/tasks', controller.translationTask.create);
   router.put('/api/translation/tasks/:id', controller.translationTask.update);
   router.patch('/api/translation/tasks/:id/status', controller.translationTask.updateStatus);
+  router.post('/api/translation/tasks/:id/backfill', controller.translationTask.backfill);
+  router.delete('/api/translation/tasks/:id', controller.translationTask.delete);
   router.get('/api/translation/tasks/statistics', controller.translationTask.getStatistics);
+
+  router.post('/api/translation/push-default-json', controller.translation.pushDefaultJson);
 
   router.get('/error', controller.pages.errorPage);
   // 通用匹配，渲染页面

@@ -106,6 +106,29 @@ class TranslationController extends Controller {
       ctx.status = 500;
     }
   }
+
+  async pushDefaultJson() {
+    const { ctx } = this;
+    try {
+      const { projectId, defaultJsonPath, defaultJson } = ctx.request.body || {};
+      if (!projectId) {
+        ctx.body = { code: 400, message: '项目ID不能为空', data: null };
+        ctx.status = 400;
+        return;
+      }
+      const result = await ctx.service.translation.pushDefaultJson(projectId, defaultJsonPath, defaultJson);
+      if (!result.success) {
+        ctx.body = { code: 400, message: result.message, data: null };
+        ctx.status = 400;
+        return;
+      }
+      ctx.body = { code: 0, message: '推送成功', data: result.data };
+    } catch (error) {
+      ctx.logger.error('[TranslationController] pushDefaultJson error:', error);
+      ctx.body = { code: 500, message: '服务器错误', data: null };
+      ctx.status = 500;
+    }
+  }
 }
 
 module.exports = TranslationController;

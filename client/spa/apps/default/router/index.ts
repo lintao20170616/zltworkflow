@@ -69,6 +69,18 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'translation/tasks',
+        name: 'TranslationTasks',
+        component: () => import('../views/translation/tasks/index.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'translation/tasks/:id',
+        name: 'TranslationTaskDetail',
+        component: () => import('../views/translation/tasks/detail.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: `/:systemId/:pathMatch(.*)+`,
         name: 'Iframe',
         component: () => import('../components/IframeView.vue'),

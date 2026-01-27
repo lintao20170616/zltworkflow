@@ -93,12 +93,16 @@ export interface TranslationUpdateRequest {
 
 export interface TranslationTaskItem {
   id: number;
+  taskNumber: string;
   projectId: number;
+  projectName: string;
   translatorId?: number | null;
   reviewerId?: number | null;
   status: number;
   progress: number;
   totalCount: number;
+  textCount: number;
+  isBackfilled: number;
   dueDate?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -113,6 +117,26 @@ export interface TranslationTaskListParams {
   translatorId?: number;
   reviewerId?: number;
   status?: number | '';
+  taskNumber?: string;
+  projectName?: string;
+  isBackfilled?: number | '';
+}
+
+export interface TranslationTaskDetail extends TranslationTaskItem {
+  translations?: TranslationItem[];
+}
+
+export interface PushDefaultJsonRequest {
+  projectId: number;
+  defaultJsonPath?: string;
+}
+
+export interface PushDefaultJsonResponse {
+  taskId: number;
+  taskNumber: string;
+  successCount: number;
+  failCount: number;
+  errors: string[];
 }
 
 export interface TranslationTaskCreateRequest {
@@ -187,6 +211,22 @@ export const updateTranslationTaskStatus = async (id: number, status: number): P
   return http.api.patch(`/translation/tasks/${id}/status`, { data: { status } });
 };
 
+export const deleteTranslationTask = async (id: number): Promise<void> => {
+  return http.api.delete(`/translation/tasks/${id}`);
+};
+
 export const getTranslationTaskStatistics = async (projectId?: number): Promise<{ total: number; byStatus: Record<number, number> }> => {
   return http.api.get('/translation/tasks/statistics', { params: projectId ? { projectId } : undefined });
+};
+
+export const getTranslationTaskDetail = async (id: number): Promise<TranslationTaskDetail> => {
+  return http.api.get(`/translation/tasks/${id}`);
+};
+
+export const backfillTranslationTask = async (id: number): Promise<{ successCount: number; failCount: number; errors: string[] }> => {
+  return http.api.post(`/translation/tasks/${id}/backfill`);
+};
+
+export const pushDefaultJson = async (data: PushDefaultJsonRequest): Promise<PushDefaultJsonResponse> => {
+  return http.api.post('/translation/push-default-json', { data });
 };

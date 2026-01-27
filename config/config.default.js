@@ -13,13 +13,17 @@ module.exports = (appInfo) => {
     xframe: {
       enable: false,
     },
+    csrf: {
+      enable: true,
+      ignore: ['/api/translation/push-default-json'],
+    },
   };
 
   config.middleware = ['oauth'];
 
   config.oauth = {
     enable: true,
-    whitelist: ['/api/user/login', '/api/user/register', '/api/user/logout', '/api/chatbot/test-ollama'],
+    whitelist: ['/api/user/login', '/api/user/register', '/api/user/logout', '/api/chatbot/test-ollama', '/api/translation/push-default-json'],
     userKey: 'user',
   };
 

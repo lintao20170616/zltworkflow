@@ -9,8 +9,16 @@ class TranslationTaskController extends Controller {
       return;
     }
     try {
-      const { projectId, translatorId, reviewerId, status } = ctx.request.query;
-      const result = await ctx.service.translationTask.list({ projectId, translatorId, reviewerId, status });
+      const { projectId, translatorId, reviewerId, status, taskNumber, projectName, isBackfilled } = ctx.request.query;
+      const result = await ctx.service.translationTask.list({
+        projectId,
+        translatorId,
+        reviewerId,
+        status,
+        taskNumber,
+        projectName,
+        isBackfilled,
+      });
       ctx.body = { code: 0, message: 'success', data: result.data };
     } catch (error) {
       ctx.logger.error('[TranslationTaskController] list error:', error);
@@ -33,8 +41,17 @@ class TranslationTaskController extends Controller {
         ctx.status = 400;
         return;
       }
+      const taskNumber = await ctx.service.translationTask.generateTaskNumber();
+      const project = await ctx.model.TranslationProject.findByPk(Number(projectId));
+      if (!project) {
+        ctx.body = { code: 400, message: '项目不存在', data: null };
+        ctx.status = 400;
+        return;
+      }
       const result = await ctx.service.translationTask.create({
         projectId,
+        taskNumber,
+        projectName: project.name,
         translatorId,
         reviewerId,
         status,
@@ -125,6 +142,75 @@ class TranslationTaskController extends Controller {
       ctx.body = { code: 0, message: 'success', data: result.data };
     } catch (error) {
       ctx.logger.error('[TranslationTaskController] getStatistics error:', error);
+      ctx.body = { code: 500, message: '服务器错误', data: null };
+      ctx.status = 500;
+    }
+  }
+
+  async getDetail() {
+    const { ctx } = this;
+    if (!ctx.session.user?.id) {
+      ctx.body = { code: 401, message: '未登录', data: null };
+      ctx.status = 401;
+      return;
+    }
+    try {
+      const { id } = ctx.params;
+      const result = await ctx.service.translationTask.getDetail(id);
+      if (!result.success) {
+        ctx.body = { code: 400, message: result.message, data: null };
+        ctx.status = 400;
+        return;
+      }
+      ctx.body = { code: 0, message: 'success', data: result.data };
+    } catch (error) {
+      ctx.logger.error('[TranslationTaskController] getDetail error:', error);
+      ctx.body = { code: 500, message: '服务器错误', data: null };
+      ctx.status = 500;
+    }
+  }
+
+  async backfill() {
+    const { ctx } = this;
+    if (!ctx.session.user?.id) {
+      ctx.body = { code: 401, message: '未登录', data: null };
+      ctx.status = 401;
+      return;
+    }
+    try {
+      const { id } = ctx.params;
+      const result = await ctx.service.translationTask.backfill(id);
+      if (!result.success) {
+        ctx.body = { code: 400, message: result.message, data: null };
+        ctx.status = 400;
+        return;
+      }
+      ctx.body = { code: 0, message: '回填成功', data: result.data };
+    } catch (error) {
+      ctx.logger.error('[TranslationTaskController] backfill error:', error);
+      ctx.body = { code: 500, message: '服务器错误', data: null };
+      ctx.status = 500;
+    }
+  }
+
+  async delete() {
+    const { ctx } = this;
+    if (!ctx.session.user?.id) {
+      ctx.body = { code: 401, message: '未登录', data: null };
+      ctx.status = 401;
+      return;
+    }
+    try {
+      const { id } = ctx.params;
+      const result = await ctx.service.translationTask.delete(id);
+      if (!result.success) {
+        ctx.body = { code: 400, message: result.message, data: null };
+        ctx.status = 400;
+        return;
+      }
+      ctx.body = { code: 0, message: '删除成功', data: null };
+    } catch (error) {
+      ctx.logger.error('[TranslationTaskController] delete error:', error);
       ctx.body = { code: 500, message: '服务器错误', data: null };
       ctx.status = 500;
     }

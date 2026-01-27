@@ -59,6 +59,12 @@ module.exports = (app) => {
         field: 'reviewer_id',
         comment: '审核人员ID',
       },
+      taskId: {
+        type: INTEGER,
+        allowNull: true,
+        field: 'task_id',
+        comment: '翻译任务ID',
+      },
       createdAt: {
         type: DATE,
         allowNull: false,
@@ -99,6 +105,12 @@ module.exports = (app) => {
       Translation.belongsTo(app.model.Language, {
         foreignKey: 'languageId',
         as: 'language',
+      });
+    }
+    if (app.model.TranslationTask) {
+      Translation.belongsTo(app.model.TranslationTask, {
+        foreignKey: 'taskId',
+        as: 'task',
       });
     }
   };

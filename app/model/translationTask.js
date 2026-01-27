@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = (app) => {
-  const { INTEGER, TINYINT, DATE } = app.Sequelize;
+  const { INTEGER, TINYINT, DATE, STRING } = app.Sequelize;
 
   const TranslationTask = app.model.define(
     'TranslationTask',
@@ -12,11 +12,24 @@ module.exports = (app) => {
         autoIncrement: true,
         comment: '任务ID',
       },
+      taskNumber: {
+        type: STRING(50),
+        allowNull: false,
+        unique: true,
+        field: 'task_number',
+        comment: '任务编号',
+      },
       projectId: {
         type: INTEGER,
         allowNull: false,
         field: 'project_id',
         comment: '项目ID',
+      },
+      projectName: {
+        type: STRING(255),
+        allowNull: false,
+        field: 'project_name',
+        comment: '项目名称',
       },
       translatorId: {
         type: INTEGER,
@@ -48,6 +61,20 @@ module.exports = (app) => {
         defaultValue: 0,
         field: 'total_count',
         comment: '总数量',
+      },
+      textCount: {
+        type: INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'text_count',
+        comment: '文案条数',
+      },
+      isBackfilled: {
+        type: TINYINT,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'is_backfilled',
+        comment: '是否回填：0-否，1-是',
       },
       dueDate: {
         type: DATE,
@@ -82,6 +109,12 @@ module.exports = (app) => {
       TranslationTask.belongsTo(app.model.TranslationProject, {
         foreignKey: 'projectId',
         as: 'project',
+      });
+    }
+    if (app.model.Translation) {
+      TranslationTask.hasMany(app.model.Translation, {
+        foreignKey: 'taskId',
+        as: 'translations',
       });
     }
   };

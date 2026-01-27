@@ -8,6 +8,7 @@
             <span style="margin-left: 16px; font-size: 16px; font-weight: bold">{{ projectDetail.name }}</span>
           </div>
           <div class="header-actions">
+            <el-button type="success" :loading="pushing" @click="handlePushDefaultJson">推送 default.json</el-button>
             <el-button type="primary" @click="openCreateTranslation">新增翻译</el-button>
             <el-button :loading="loading" @click="loadTranslationList">刷新</el-button>
           </div>
@@ -103,6 +104,7 @@ import {
   deleteTranslation,
   getTranslationList,
   getTranslationProjectDetail,
+  pushDefaultJson,
   updateTranslation,
   type TranslationItem,
   type TranslationProjectDetail,
@@ -113,6 +115,7 @@ const router = useRouter();
 const projectId = ref<number>(Number(route.params.id));
 const loading = ref(false);
 const saving = ref(false);
+const pushing = ref(false);
 const projectDetail = ref<TranslationProjectDetail | null>(null);
 const activeTab = ref<string>('');
 const translationList = ref<TranslationItem[]>([]);
@@ -269,6 +272,27 @@ const handleDeleteTranslation = async (row: TranslationItem) => {
     if (error instanceof Error && error.message) {
       return;
     }
+  }
+};
+
+const handlePushDefaultJson = async () => {
+  if (pushing.value) return;
+  try {
+    await ElMessageBox.confirm('确认推送 default.json 到当前项目？将自动创建翻译任务。', '提示', { type: 'warning' });
+    pushing.value = true;
+    const result = await pushDefaultJson({ projectId: projectId.value });
+    ElMessage.success(`推送成功！创建任务 ${result.taskNumber}，成功 ${result.successCount} 条，失败 ${result.failCount} 条`);
+    await loadTranslationList();
+  } catch (error) {
+    if (error instanceof Error && error.message) {
+      if (error.message !== 'cancel') {
+        ElMessage.error(error.message);
+      }
+      return;
+    }
+    ElMessage.error('推送失败');
+  } finally {
+    pushing.value = false;
   }
 };
 

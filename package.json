@@ -16,7 +16,8 @@
     "prettier": "prettier **/*.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} *.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} --write --cache --no-error-on-unmatched-pattern",
     "lint-staged": "lint-staged -p false",
     "migrate": "node scripts/run-migration.js",
-    "i18n:scan": "node scripts/i18n-scanner.js"
+    "i18n:scan": "node scripts/i18n-scanner.js",
+    "i18n:push": "node scripts/i18n-push.js"
   },
   "repository": {
     "type": "git",
@@ -85,6 +86,7 @@
     "@zlt/zlt-admin-client": "link:/Users/lintao/zltadminlib/packages/@zlt/zlt-admin-client",
     "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
+    "commander": "^14.0.2",
     "cross-env": "^10.1.0",
     "dayjs": "^1.11.13",
     "egg": "3.32.0",
@@ -101,9 +103,9 @@
     "pinia": "^3.0.2",
     "sequelize": "6.37.1",
     "umi-request": "^1.4.0",
+    "uuid": "^9.0.1",
     "vue": "^3.5.26",
     "vue-i18n": "^9.14.4",
-    "vue-router": "^4.4.5",
-    "uuid": "^9.0.1"
+    "vue-router": "^4.4.5"
   }
 }
