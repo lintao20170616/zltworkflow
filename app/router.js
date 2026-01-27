@@ -52,6 +52,7 @@ module.exports = (app) => {
 
   router.get('/api/translation/tasks', controller.translationTask.list);
   router.get('/api/translation/tasks/:id', controller.translationTask.getDetail);
+  router.get('/api/translation/tasks/:id/translations', controller.translationTask.getTranslations);
   router.post('/api/translation/tasks', controller.translationTask.create);
   router.put('/api/translation/tasks/:id', controller.translationTask.update);
   router.patch('/api/translation/tasks/:id/status', controller.translationTask.updateStatus);

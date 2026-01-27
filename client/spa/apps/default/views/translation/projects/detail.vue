@@ -8,7 +8,6 @@
             <span style="margin-left: 16px; font-size: 16px; font-weight: bold">{{ projectDetail.name }}</span>
           </div>
           <div class="header-actions">
-            <el-button type="success" :loading="pushing" @click="handlePushDefaultJson">推送 default.json</el-button>
             <el-button type="primary" @click="openCreateTranslation">新增翻译</el-button>
             <el-button :loading="loading" @click="loadTranslationList">刷新</el-button>
           </div>
@@ -32,16 +31,17 @@
           <div class="tab-content">
             <div class="tab-header">
               <el-input
-                v-model="translationQuery.keyword"
+                v-model="translationQueryMap[String(lang.id)].keyword"
                 placeholder="搜索翻译键或翻译文本"
                 clearable
                 style="width: 300px"
-                @keyup.enter="loadTranslationList"
+                @keyup.enter="handleSearch"
+                @clear="handleSearch"
               />
-              <el-button :loading="loading" @click="loadTranslationList">搜索</el-button>
+              <el-button :loading="loading" @click="handleSearch">搜索</el-button>
             </div>
 
-            <el-table v-loading="loading" :data="translationList" style="width: 100%; margin-top: 16px">
+            <el-table v-loading="loading" :data="translationListMap[String(lang.id)] || []" style="width: 100%; margin-top: 16px">
               <el-table-column prop="key" label="翻译键" min-width="200" />
               <el-table-column prop="sourceText" label="源文本" min-width="200" show-overflow-tooltip />
               <el-table-column prop="translatedText" label="翻译文本" min-width="250" show-overflow-tooltip>
@@ -63,6 +63,18 @@
                 </template>
               </el-table-column>
             </el-table>
+
+            <el-pagination
+              v-if="paginationMap[String(lang.id)]"
+              v-model:current-page="translationQueryMap[String(lang.id)].page"
+              v-model:page-size="translationQueryMap[String(lang.id)].pageSize"
+              :total="paginationMap[String(lang.id)].total"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              style="margin-top: 16px; justify-content: flex-end"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+            />
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -118,11 +130,10 @@ const saving = ref(false);
 const pushing = ref(false);
 const projectDetail = ref<TranslationProjectDetail | null>(null);
 const activeTab = ref<string>('');
-const translationList = ref<TranslationItem[]>([]);
+const translationListMap = ref<Record<string, TranslationItem[]>>({});
+const paginationMap = ref<Record<string, { total: number; current: number; pageSize: number }>>({});
 
-const translationQuery = reactive<{ keyword: string }>({
-  keyword: '',
-});
+const translationQueryMap = reactive<Record<string, { keyword: string; page: number; pageSize: number }>>({});
 
 const translationDialogVisible = ref(false);
 const translationDialogMode = ref<'create' | 'edit'>('create');
@@ -166,6 +177,14 @@ const loadProjectDetail = async () => {
     const data = await getTranslationProjectDetail(projectId.value);
     projectDetail.value = data;
     if (data.targetLanguages && data.targetLanguages.length > 0) {
+      data.targetLanguages.forEach((lang) => {
+        const langId = String(lang.id);
+        if (!translationQueryMap[langId]) {
+          translationQueryMap[langId] = { keyword: '', page: 1, pageSize: 20 };
+        }
+        translationListMap.value[langId] = [];
+        paginationMap.value[langId] = { total: 0, current: 1, pageSize: 20 };
+      });
       activeTab.value = String(data.targetLanguages[0].id);
       await loadTranslationList();
     }
@@ -181,12 +200,16 @@ const loadTranslationList = async () => {
   if (!activeTab.value) return;
   loading.value = true;
   try {
-    const data = await getTranslationList({
+    const currentQuery = translationQueryMap[activeTab.value] || { keyword: '', page: 1, pageSize: 20 };
+    const result = await getTranslationList({
       projectId: projectId.value,
       languageId: Number(activeTab.value),
-      keyword: translationQuery.keyword || undefined,
+      keyword: currentQuery.keyword || undefined,
+      page: currentQuery.page || 1,
+      pageSize: currentQuery.pageSize || 20,
     });
-    translationList.value = data;
+    translationListMap.value[activeTab.value] = result?.data || [];
+    paginationMap.value[activeTab.value] = result?.pagination || { total: 0, current: 1, pageSize: 20 };
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '加载翻译列表失败');
   } finally {
@@ -196,8 +219,40 @@ const loadTranslationList = async () => {
 
 const handleTabChange = (tabName: string) => {
   activeTab.value = tabName;
-  translationQuery.keyword = '';
-  loadTranslationList();
+  if (!translationQueryMap[tabName]) {
+    translationQueryMap[tabName] = { keyword: '', page: 1, pageSize: 20 };
+  }
+  if (!translationListMap.value[tabName] || translationListMap.value[tabName].length === 0) {
+    loadTranslationList();
+  }
+};
+
+const handleSizeChange = (pageSize: number) => {
+  if (!activeTab.value) return;
+  const currentQuery = translationQueryMap[activeTab.value];
+  if (currentQuery) {
+    currentQuery.pageSize = pageSize;
+    currentQuery.page = 1;
+    loadTranslationList();
+  }
+};
+
+const handleCurrentChange = (page: number) => {
+  if (!activeTab.value) return;
+  const currentQuery = translationQueryMap[activeTab.value];
+  if (currentQuery) {
+    currentQuery.page = page;
+    loadTranslationList();
+  }
+};
+
+const handleSearch = () => {
+  if (!activeTab.value) return;
+  const currentQuery = translationQueryMap[activeTab.value];
+  if (currentQuery) {
+    currentQuery.page = 1;
+    loadTranslationList();
+  }
 };
 
 const resetTranslationForm = () => {

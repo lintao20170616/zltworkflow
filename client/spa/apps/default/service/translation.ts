@@ -73,6 +73,17 @@ export interface TranslationListParams {
   languageId?: number;
   keyword?: string;
   status?: number | '';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface TranslationListResponse {
+  data: TranslationItem[];
+  pagination: {
+    total: number;
+    current: number;
+    pageSize: number;
+  };
 }
 
 export interface TranslationCreateRequest {
@@ -123,7 +134,24 @@ export interface TranslationTaskListParams {
 }
 
 export interface TranslationTaskDetail extends TranslationTaskItem {
+  project?: {
+    id: number;
+    name: string;
+    description?: string | null;
+    targetLanguages?: Array<{
+      id: number;
+      code: string;
+      name: string;
+      nativeName?: string | null;
+    }>;
+  };
   translations?: TranslationItem[];
+}
+
+export interface TranslationTaskTranslationsParams {
+  languageId?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface PushDefaultJsonRequest {
@@ -179,7 +207,7 @@ export const updateTranslationProjectStatus = async (id: number, status: number)
   return http.api.patch(`/translation/projects/${id}/status`, { data: { status } });
 };
 
-export const getTranslationList = async (params?: TranslationListParams): Promise<TranslationItem[]> => {
+export const getTranslationList = async (params?: TranslationListParams): Promise<TranslationListResponse> => {
   return http.api.get('/translation/contents', { params });
 };
 
@@ -221,6 +249,10 @@ export const getTranslationTaskStatistics = async (projectId?: number): Promise<
 
 export const getTranslationTaskDetail = async (id: number): Promise<TranslationTaskDetail> => {
   return http.api.get(`/translation/tasks/${id}`);
+};
+
+export const getTranslationTaskTranslations = async (id: number, params?: TranslationTaskTranslationsParams): Promise<TranslationListResponse> => {
+  return http.api.get(`/translation/tasks/${id}/translations`, { params });
 };
 
 export const backfillTranslationTask = async (id: number): Promise<{ successCount: number; failCount: number; errors: string[] }> => {

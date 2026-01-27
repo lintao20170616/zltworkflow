@@ -1,7 +1,7 @@
 const { Service } = require('egg');
 
 class TranslationService extends Service {
-  async list({ projectId, languageId, keyword, status } = {}) {
+  async list({ projectId, languageId, keyword, status, page = 1, pageSize = 20 } = {}) {
     const { ctx } = this;
     const Op = ctx.app.Sequelize.Op;
 
@@ -20,7 +20,11 @@ class TranslationService extends Service {
       where[Op.or] = [{ key: { [Op.like]: kw } }, { sourceText: { [Op.like]: kw } }, { translatedText: { [Op.like]: kw } }];
     }
 
-    const translations = await ctx.model.Translation.findAll({
+    const currentPage = Number(page) || 1;
+    const limit = Number(pageSize) || 20;
+    const offset = (currentPage - 1) * limit;
+
+    const { count, rows: translations } = await ctx.model.Translation.findAndCountAll({
       where,
       include: [
         {
@@ -30,9 +34,19 @@ class TranslationService extends Service {
         },
       ],
       order: [['createdAt', 'DESC']],
+      limit,
+      offset,
     });
 
-    return { success: true, data: translations };
+    return {
+      success: true,
+      data: translations,
+      pagination: {
+        total: count,
+        current: currentPage,
+        pageSize: limit,
+      },
+    };
   }
 
   async create({ projectId, key, sourceText, languageId, translatedText, status = 1, translatorId, reviewerId }) {

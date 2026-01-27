@@ -170,6 +170,30 @@ class TranslationTaskController extends Controller {
     }
   }
 
+  async getTranslations() {
+    const { ctx } = this;
+    if (!ctx.session.user?.id) {
+      ctx.body = { code: 401, message: '未登录', data: null };
+      ctx.status = 401;
+      return;
+    }
+    try {
+      const { id } = ctx.params;
+      const { languageId, page, pageSize } = ctx.request.query;
+      const result = await ctx.service.translationTask.getTranslations(id, { languageId, page, pageSize });
+      if (!result.success) {
+        ctx.body = { code: 400, message: result.message, data: null };
+        ctx.status = 400;
+        return;
+      }
+      ctx.body = { code: 0, message: 'success', data: { data: result.data, pagination: result.pagination } };
+    } catch (error) {
+      ctx.logger.error('[TranslationTaskController] getTranslations error:', error);
+      ctx.body = { code: 500, message: '服务器错误', data: null };
+      ctx.status = 500;
+    }
+  }
+
   async backfill() {
     const { ctx } = this;
     if (!ctx.session.user?.id) {

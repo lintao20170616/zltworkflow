@@ -36,38 +36,65 @@
         <template #header>
           <span>{{ $t('翻译记录列表') }}</span>
         </template>
-        <el-table v-loading="loading" :data="translationList" style="width: 100%">
-          <el-table-column prop="key" :label="$t('翻译键')" min-width="200" />
-          <el-table-column prop="sourceText" :label="$t('源文本')" min-width="200" show-overflow-tooltip />
-          <el-table-column prop="translatedText" :label="$t('翻译文本')" min-width="250" show-overflow-tooltip>
-            <template #default="{ row }">
-              <span v-if="row.translatedText">{{ row.translatedText }}</span>
-              <span v-else style="color: #999">{{ $t('未翻译') }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="language" :label="$t('语言')" width="150">
-            <template #default="{ row }">
-              <span>{{ row.language?.name || '-' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="status" :label="$t('状态')" width="120">
-            <template #default="{ row }">
-              <el-tag :type="getTranslationStatusType(row.status)">{{ getTranslationStatusText(row.status) }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="updatedAt" :label="$t('更新时间')" width="180" />
-        </el-table>
+        <el-tabs
+          v-if="taskDetail?.project?.targetLanguages && taskDetail.project.targetLanguages.length > 0"
+          v-model="activeTab"
+          style="margin-top: 0"
+          @tab-change="handleTabChange"
+        >
+          <el-tab-pane v-for="lang in taskDetail.project.targetLanguages" :key="lang.id" :label="lang.name" :name="String(lang.id)">
+            <div class="tab-content">
+              <el-table v-loading="loading" :data="translationListMap[String(lang.id)] || []" style="width: 100%">
+                <el-table-column prop="key" :label="$t('翻译键')" min-width="200" />
+                <el-table-column prop="sourceText" :label="$t('源文本')" min-width="200" show-overflow-tooltip />
+                <el-table-column prop="translatedText" :label="$t('翻译文本')" min-width="250" show-overflow-tooltip>
+                  <template #default="{ row }">
+                    <span v-if="row.translatedText">{{ row.translatedText }}</span>
+                    <span v-else style="color: #999">{{ $t('未翻译') }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="status" :label="$t('状态')" width="120">
+                  <template #default="{ row }">
+                    <el-tag :type="getTranslationStatusType(row.status)">{{ getTranslationStatusText(row.status) }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="updatedAt" :label="$t('更新时间')" width="180" />
+              </el-table>
+
+              <el-pagination
+                v-if="paginationMap[String(lang.id)]"
+                v-model:current-page="translationQueryMap[String(lang.id)].page"
+                v-model:page-size="translationQueryMap[String(lang.id)].pageSize"
+                :total="paginationMap[String(lang.id)].total"
+                :page-sizes="[10, 20, 50, 100]"
+                layout="total, sizes, prev, pager, next, jumper"
+                style="margin-top: 16px; justify-content: flex-end"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+        <div v-else style="text-align: center; padding: 40px; color: #999">
+          {{ $t('暂无翻译记录') }}
+        </div>
       </el-card>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { backfillTranslationTask, getTranslationTaskDetail, type TranslationTaskDetail } from '@app/service/translation';
+import {
+  backfillTranslationTask,
+  getTranslationTaskDetail,
+  getTranslationTaskTranslations,
+  type TranslationItem,
+  type TranslationTaskDetail,
+} from '@app/service/translation';
 
 const route = useRoute();
 const router = useRouter();
@@ -76,7 +103,10 @@ const taskId = ref<number>(Number(route.params.id));
 const loading = ref(false);
 const backfilling = ref(false);
 const taskDetail = ref<TranslationTaskDetail | null>(null);
-const translationList = ref<any[]>([]);
+const activeTab = ref<string>('');
+const translationListMap = ref<Record<string, TranslationItem[]>>({});
+const paginationMap = ref<Record<string, { total: number; current: number; pageSize: number }>>({});
+const translationQueryMap = reactive<Record<string, { page: number; pageSize: number }>>({});
 
 const getStatusType = (status: number): string => {
   const map: Record<number, string> = { 1: 'warning', 2: 'primary', 3: 'info', 4: 'success', 5: 'danger' };
@@ -103,12 +133,71 @@ const loadDetail = async () => {
   try {
     const data = await getTranslationTaskDetail(taskId.value);
     taskDetail.value = data;
-    translationList.value = data.translations || [];
+    if (data.project?.targetLanguages && data.project.targetLanguages.length > 0) {
+      data.project.targetLanguages.forEach((lang) => {
+        const langId = String(lang.id);
+        if (!translationQueryMap[langId]) {
+          translationQueryMap[langId] = { page: 1, pageSize: 20 };
+        }
+        translationListMap.value[langId] = [];
+        paginationMap.value[langId] = { total: 0, current: 1, pageSize: 20 };
+      });
+      activeTab.value = String(data.project.targetLanguages[0].id);
+      await loadTranslationList();
+    }
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : t('加载任务详情失败'));
     router.push('/translation/tasks');
   } finally {
     loading.value = false;
+  }
+};
+
+const loadTranslationList = async () => {
+  if (!activeTab.value) return;
+  loading.value = true;
+  try {
+    const currentQuery = translationQueryMap[activeTab.value] || { page: 1, pageSize: 20 };
+    const result = await getTranslationTaskTranslations(taskId.value, {
+      languageId: Number(activeTab.value),
+      page: currentQuery.page || 1,
+      pageSize: currentQuery.pageSize || 20,
+    });
+    translationListMap.value[activeTab.value] = result?.data || [];
+    paginationMap.value[activeTab.value] = result?.pagination || { total: 0, current: 1, pageSize: 20 };
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('加载翻译列表失败'));
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleTabChange = (tabName: string) => {
+  activeTab.value = tabName;
+  if (!translationQueryMap[tabName]) {
+    translationQueryMap[tabName] = { page: 1, pageSize: 20 };
+  }
+  if (!translationListMap.value[tabName] || translationListMap.value[tabName].length === 0) {
+    loadTranslationList();
+  }
+};
+
+const handleSizeChange = (pageSize: number) => {
+  if (!activeTab.value) return;
+  const currentQuery = translationQueryMap[activeTab.value];
+  if (currentQuery) {
+    currentQuery.pageSize = pageSize;
+    currentQuery.page = 1;
+    loadTranslationList();
+  }
+};
+
+const handleCurrentChange = (page: number) => {
+  if (!activeTab.value) return;
+  const currentQuery = translationQueryMap[activeTab.value];
+  if (currentQuery) {
+    currentQuery.page = page;
+    loadTranslationList();
   }
 };
 
@@ -161,5 +250,9 @@ onMounted(() => {
 
 .task-info {
   margin-bottom: 20px;
+}
+
+.tab-content {
+  padding: 16px 0;
 }
 </style>

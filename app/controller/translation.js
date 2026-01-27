@@ -9,11 +9,11 @@ class TranslationController extends Controller {
       return;
     }
     try {
-      const { projectId, languageId, keyword, status } = ctx.request.query;
-      const result = await ctx.service.translation.list({ projectId, languageId, keyword, status });
-      ctx.body = { code: 0, message: 'success', data: result.data };
+      const { projectId, languageId, keyword, status, page, pageSize } = ctx.request.query;
+      const result = await ctx.service.translation.list({ projectId, languageId, keyword, status, page, pageSize });
+      ctx.body = { code: 0, message: 'success', data: { data: result.data, pagination: result.pagination } };
     } catch (error) {
-      ctx.logger.error('[TranslationController] list error:', error);
+      ctx.logger.error('[TranslationController] create error:', error);
       ctx.body = { code: 500, message: '服务器错误', data: null };
       ctx.status = 500;
     }
@@ -33,15 +33,7 @@ class TranslationController extends Controller {
         ctx.status = 400;
         return;
       }
-      const result = await ctx.service.translation.create({
-        projectId,
-        key,
-        sourceText,
-        languageId,
-        translatedText,
-        status,
-        translatorId: ctx.session.user.id,
-      });
+      const result = await ctx.service.translation.create({ projectId, key, sourceText, languageId, translatedText, status });
       if (!result.success) {
         ctx.body = { code: 400, message: result.message, data: null };
         ctx.status = 400;
@@ -54,7 +46,6 @@ class TranslationController extends Controller {
       ctx.status = 500;
     }
   }
-
   async update() {
     const { ctx } = this;
     if (!ctx.session.user?.id) {

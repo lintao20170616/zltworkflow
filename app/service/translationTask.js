@@ -160,18 +160,7 @@ class TranslationTaskService extends Service {
         {
           model: ctx.model.TranslationProject,
           as: 'project',
-          attributes: ['id', 'name', 'description'],
-        },
-        {
-          model: ctx.model.Translation,
-          as: 'translations',
-          include: [
-            {
-              model: ctx.model.Language,
-              as: 'language',
-              attributes: ['id', 'code', 'name', 'nativeName'],
-            },
-          ],
+          attributes: ['id', 'name', 'description', 'targetLanguageIds'],
         },
       ],
     });
@@ -180,7 +169,70 @@ class TranslationTaskService extends Service {
       return { success: false, message: '任务不存在' };
     }
 
-    return { success: true, data: task };
+    const taskData = task.toJSON();
+    const project = taskData.project;
+    let targetLanguages = [];
+    if (project && project.targetLanguageIds && project.targetLanguageIds.length > 0) {
+      targetLanguages = await ctx.model.Language.findAll({
+        where: {
+          id: project.targetLanguageIds,
+        },
+        attributes: ['id', 'code', 'name', 'nativeName'],
+        order: [['sort', 'ASC']],
+      });
+    }
+
+    return {
+      success: true,
+      data: {
+        ...taskData,
+        project: {
+          ...project,
+          targetLanguages: targetLanguages.map((lang) => lang.toJSON()),
+        },
+      },
+    };
+  }
+
+  async getTranslations(taskId, { languageId, page = 1, pageSize = 20 } = {}) {
+    const { ctx } = this;
+    const Op = ctx.app.Sequelize.Op;
+
+    const where = {
+      taskId: Number(taskId),
+    };
+
+    if (languageId) {
+      where.languageId = Number(languageId);
+    }
+
+    const currentPage = Number(page) || 1;
+    const limit = Number(pageSize) || 20;
+    const offset = (currentPage - 1) * limit;
+
+    const { count, rows: translations } = await ctx.model.Translation.findAndCountAll({
+      where,
+      include: [
+        {
+          model: ctx.model.Language,
+          as: 'language',
+          attributes: ['id', 'code', 'name', 'nativeName'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+    });
+
+    return {
+      success: true,
+      data: translations,
+      pagination: {
+        total: count,
+        current: currentPage,
+        pageSize: limit,
+      },
+    };
   }
 
   async backfill(taskId) {
