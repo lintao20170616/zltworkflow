@@ -16,7 +16,7 @@ class AdminService extends Service {
   async getInfo() {
     const info = {};
     console.log(this.config); // const { sessionKey, clients, localeClientMap, extraInfo } = this.config.eggIluc
-    return { info: 'zltadminweb is running' };
+    return { info: 'zltworkflow is running' };
   }
 }
 

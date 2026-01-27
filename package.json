@@ -1,5 +1,5 @@
 {
-  "name": "zltadminweb",
+  "name": "zltworkflow",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -15,16 +15,17 @@
     "stylelint": "sh scripts/check-node-version.sh && stylelint **/*.{css,less,scss,vue,html} *.{css,less,scss,vue,html} --fix --cache --quiet",
     "prettier": "prettier **/*.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} *.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} --write --cache --no-error-on-unmatched-pattern",
     "lint-staged": "lint-staged -p false",
-    "migrate": "node scripts/run-migration.js"
+    "migrate": "node scripts/run-migration.js",
+    "i18n:scan": "node scripts/i18n-scanner.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lintao20170616/zltadminweb.git"
+    "url": "git+https://github.com/lintao20170616/zltworkflow.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/lintao20170616/zltadminweb/issues"
+    "url": "https://github.com/lintao20170616/zltworkflow/issues"
   },
   "husky": {
     "hooks": {
@@ -37,7 +38,7 @@
     "*.{css,less,scss,vue,html}": "stylelint --fix --cache",
     "*.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml}": "prettier --write --cache"
   },
-  "homepage": "https://github.com/lintao20170616/zltadminweb#readme",
+  "homepage": "https://github.com/lintao20170616/zltworkflow#readme",
   "devDependencies": {
     "@commitlint/cli": "^17.8.1",
     "@commitlint/config-conventional": "^17.8.1",
@@ -81,6 +82,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
+    "@zlt/zlt-admin-client": "link:/Users/lintao/zltadminlib/packages/@zlt/zlt-admin-client",
     "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
     "cross-env": "^10.1.0",
@@ -89,9 +91,9 @@
     "egg-redis": "^2.6.1",
     "egg-sequelize": "6.0.0",
     "egg-session-redis": "^2.1.0",
-    "inflection": "^1.13.4",
     "egg-view-nunjucks": "^2.3.0",
     "element-plus": "^2.13.0",
+    "inflection": "^1.13.4",
     "js-cookies": "^1.0.4",
     "lodash": "^4.17.21",
     "mysql2": "3.16.0",
@@ -100,7 +102,8 @@
     "sequelize": "6.37.1",
     "umi-request": "^1.4.0",
     "vue": "^3.5.26",
+    "vue-i18n": "^9.14.4",
     "vue-router": "^4.4.5",
-    "@zlt/zlt-admin-client": "link:/Users/lintao/zltadminlib/packages/@zlt/zlt-admin-client"
+    "uuid": "^9.0.1"
   }
 }
