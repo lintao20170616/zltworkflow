@@ -135,13 +135,13 @@ const errorHandler = async (error: unknown): Promise<never> => {
 const getClient = (oapiName?: string): RequestMethod => {
   const client = extend({
     prefix: `/api${oapiName ? `/${oapiName}` : ''}`,
-    timeout: 60000,
+    timeout: 600000,
     timeoutMessage: 'timeout',
     credentials: 'include',
     requestType: 'json',
     responseType: 'json',
     useCache: false,
-    ttl: 60000,
+    ttl: 600000,
     maxCache: 0,
     parseResponse: true,
     throwErrIfParseFail: false,
