@@ -12,7 +12,8 @@
 - **新增翻译内容管理功能**
   - 翻译键值对（key-value）管理
   - 支持多语言翻译内容存储
-  - 翻译内容版本管理
+  - 在项目详情页中按目标语言 Tab 组织翻译内容
+  - 每个语言 Tab 下显示该语言的翻译列表
 
 - **新增翻译任务管理功能**
   - 翻译任务创建和分配
@@ -27,8 +28,11 @@
 - **受影响的代码**：
   - 后端：新增 `app/model/translation*.js`、`app/service/translation*.js`、`app/controller/translation*.js`
   - 前端：新增 `client/spa/apps/default/views/translation/` 相关页面
+    - 项目管理列表页
+    - 项目翻译详情页（包含多语言 Tab 切换）
   - 数据库：新增 `translations`、`translation_projects`、`translation_tasks` 表
   - 路由：新增 `/api/translation/*` 相关路由
+  - 前端路由：`/translation/projects`（列表）、`/translation/projects/:id`（详情）
 
 - **数据模型扩展**：
   - `languages` 表已存在，需要建立与翻译内容的关联
