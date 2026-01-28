@@ -277,3 +277,16 @@ export interface BatchTranslateWithAIResponse {
 export const batchTranslateWithAI = async (taskId: number): Promise<BatchTranslateWithAIResponse> => {
   return http.api.post(`/translation/tasks/${taskId}/batch-translate-with-ai`);
 };
+
+export interface BatchUpdateStatusRequest {
+  ids: number[];
+  status: number;
+}
+
+export interface BatchUpdateStatusResponse {
+  affectedRows: number;
+}
+
+export const batchUpdateTranslationStatus = async (data: BatchUpdateStatusRequest): Promise<BatchUpdateStatusResponse> => {
+  return http.api.post('/translation/contents/batch-update-status', { data });
+};

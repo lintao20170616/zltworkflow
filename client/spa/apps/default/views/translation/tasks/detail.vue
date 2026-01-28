@@ -29,7 +29,7 @@
             <el-tag :type="taskDetail.isBackfilled === 1 ? 'success' : 'info'">{{ taskDetail.isBackfilled === 1 ? $t('已回填') : $t('未回填') }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item :label="$t('进度')">
-            <el-progress :percentage="taskDetail.textCount > 0 ? Math.round((taskDetail.progress / taskDetail.textCount) * 100) : 0" />
+            <el-progress :percentage="taskDetail.totalCount > 0 ? Math.round((taskDetail.textCount / taskDetail.totalCount) * 100) : 0" />
           </el-descriptions-item>
           <el-descriptions-item :label="$t('创建时间')" :span="2">{{ taskDetail.createdAt }}</el-descriptions-item>
         </el-descriptions>

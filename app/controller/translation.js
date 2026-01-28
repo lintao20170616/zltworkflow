@@ -166,6 +166,39 @@ class TranslationController extends Controller {
       ctx.status = 500;
     }
   }
+
+  async batchUpdateStatus() {
+    const { ctx } = this;
+    if (!ctx.session.user?.id) {
+      ctx.body = { code: 401, message: '未登录', data: null };
+      ctx.status = 401;
+      return;
+    }
+    try {
+      const { ids, status } = ctx.request.body || {};
+      if (!Array.isArray(ids) || ids.length === 0) {
+        ctx.body = { code: 400, message: '翻译ID列表不能为空', data: null };
+        ctx.status = 400;
+        return;
+      }
+      if (typeof status === 'undefined') {
+        ctx.body = { code: 400, message: '状态不能为空', data: null };
+        ctx.status = 400;
+        return;
+      }
+      const result = await ctx.service.translation.batchUpdateStatus(ids, status);
+      if (!result.success) {
+        ctx.body = { code: 400, message: result.message, data: null };
+        ctx.status = 400;
+        return;
+      }
+      ctx.body = { code: 0, message: '批量更新成功', data: result.data };
+    } catch (error) {
+      ctx.logger.error('[TranslationController] batchUpdateStatus error:', error);
+      ctx.body = { code: 500, message: '服务器错误', data: null };
+      ctx.status = 500;
+    }
+  }
 }
 
 module.exports = TranslationController;

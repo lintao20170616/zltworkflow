@@ -39,9 +39,18 @@
                 @clear="handleSearch"
               />
               <el-button :loading="loading" @click="handleSearch">搜索</el-button>
+              <el-button type="primary" :disabled="selectedRowsMap[String(lang.id)]?.length === 0" @click="openBatchUpdateStatusDialog">
+                批量更新状态 ({{ selectedRowsMap[String(lang.id)]?.length || 0 }})
+              </el-button>
             </div>
 
-            <el-table v-loading="loading" :data="translationListMap[String(lang.id)] || []" style="width: 100%; margin-top: 16px">
+            <el-table
+              v-loading="loading"
+              :data="translationListMap[String(lang.id)] || []"
+              style="width: 100%; margin-top: 16px"
+              @selection-change="handleSelectionChange"
+            >
+              <el-table-column type="selection" width="55" />
               <el-table-column prop="key" label="翻译键" min-width="200" />
               <el-table-column prop="sourceText" label="源文本" min-width="200" show-overflow-tooltip />
               <el-table-column prop="translatedText" label="翻译文本" min-width="250" show-overflow-tooltip>
@@ -104,6 +113,25 @@
         <el-button type="primary" :loading="saving" @click="handleSubmitTranslation">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="batchUpdateStatusDialogVisible" title="批量更新状态" width="400px">
+      <el-form ref="batchUpdateFormRef" :model="batchUpdateForm" label-width="100px">
+        <el-form-item label="选中数量">
+          <span>{{ selectedRowsMap[activeTab]?.length || 0 }} 条</span>
+        </el-form-item>
+        <el-form-item label="状态" required>
+          <el-select v-model="batchUpdateForm.status" placeholder="请选择状态" style="width: 100%">
+            <el-option label="待翻译" :value="1" />
+            <el-option label="翻译中" :value="2" />
+            <el-option label="已完成" :value="3" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchUpdateStatusDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="batchUpdating" @click="handleBatchUpdateStatus">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -112,6 +140,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
+  batchUpdateTranslationStatus,
   createTranslation,
   deleteTranslation,
   getTranslationList,
@@ -145,6 +174,14 @@ const translationForm = reactive<{ key: string; sourceText: string | null; trans
   sourceText: null,
   translatedText: null,
   status: 1,
+});
+
+const selectedRowsMap = ref<Record<string, TranslationItem[]>>({});
+const batchUpdateStatusDialogVisible = ref(false);
+const batchUpdating = ref(false);
+const batchUpdateFormRef = ref();
+const batchUpdateForm = reactive<{ status: number | null }>({
+  status: null,
 });
 
 const translationRules = {
@@ -184,6 +221,7 @@ const loadProjectDetail = async () => {
         }
         translationListMap.value[langId] = [];
         paginationMap.value[langId] = { total: 0, current: 1, pageSize: 20 };
+        selectedRowsMap.value[langId] = [];
       });
       activeTab.value = String(data.targetLanguages[0].id);
       await loadTranslationList();
@@ -223,9 +261,17 @@ const handleTabChange = (tabName: string) => {
   if (!translationQueryMap[tabName]) {
     translationQueryMap[tabName] = { keyword: '', page: 1, pageSize: 20 };
   }
+  if (!selectedRowsMap.value[tabName]) {
+    selectedRowsMap.value[tabName] = [];
+  }
   if (!translationListMap.value[tabName] || translationListMap.value[tabName].length === 0) {
     loadTranslationList();
   }
+};
+
+const handleSelectionChange = (selection: TranslationItem[]) => {
+  if (!activeTab.value) return;
+  selectedRowsMap.value[activeTab.value] = selection;
 };
 
 const handleSizeChange = (pageSize: number) => {
@@ -349,6 +395,55 @@ const handlePushDefaultJson = async () => {
     ElMessage.error('推送失败');
   } finally {
     pushing.value = false;
+  }
+};
+
+const openBatchUpdateStatusDialog = () => {
+  if (!activeTab.value) {
+    ElMessage.warning('请先选择一个语言 Tab');
+    return;
+  }
+  const selected = selectedRowsMap.value[activeTab.value] || [];
+  if (selected.length === 0) {
+    ElMessage.warning('请先选择要更新的翻译');
+    return;
+  }
+  batchUpdateForm.status = null;
+  batchUpdateStatusDialogVisible.value = true;
+};
+
+const handleBatchUpdateStatus = async () => {
+  if (!activeTab.value) return;
+  if (batchUpdating.value) return;
+
+  const selected = selectedRowsMap.value[activeTab.value] || [];
+  if (selected.length === 0) {
+    ElMessage.warning('请先选择要更新的翻译');
+    return;
+  }
+
+  if (!batchUpdateForm.status) {
+    ElMessage.warning('请选择要更新的状态');
+    return;
+  }
+
+  batchUpdating.value = true;
+  try {
+    const ids = selected.map((row) => row.id);
+    await batchUpdateTranslationStatus({
+      ids,
+      status: batchUpdateForm.status!,
+    });
+    ElMessage.success(`成功更新 ${ids.length} 条翻译状态`);
+    batchUpdateStatusDialogVisible.value = false;
+    selectedRowsMap.value[activeTab.value] = [];
+    await loadTranslationList();
+  } catch (error) {
+    if (error instanceof Error) {
+      ElMessage.error(error.message);
+    }
+  } finally {
+    batchUpdating.value = false;
   }
 };
 

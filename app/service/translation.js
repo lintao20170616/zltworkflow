@@ -122,6 +122,41 @@ class TranslationService extends Service {
     return { success: true };
   }
 
+  async batchUpdateStatus(ids, status) {
+    const { ctx } = this;
+    const Op = ctx.app.Sequelize.Op;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return { success: false, message: '翻译ID列表不能为空' };
+    }
+
+    if (typeof status === 'undefined') {
+      return { success: false, message: '状态不能为空' };
+    }
+
+    const translationIds = ids.map((id) => Number(id)).filter((id) => id > 0);
+
+    if (translationIds.length === 0) {
+      return { success: false, message: '无效的翻译ID列表' };
+    }
+
+    try {
+      const [affectedRows] = await ctx.model.Translation.update(
+        { status: Number(status) },
+        {
+          where: {
+            id: { [Op.in]: translationIds },
+          },
+        },
+      );
+
+      return { success: true, data: { affectedRows } };
+    } catch (error) {
+      ctx.logger.error('[TranslationService] batchUpdateStatus error:', error);
+      return { success: false, message: '批量更新状态失败' };
+    }
+  }
+
   async translateWithAI(translationId) {
     const { ctx } = this;
     try {

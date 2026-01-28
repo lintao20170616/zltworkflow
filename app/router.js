@@ -50,6 +50,7 @@ module.exports = (app) => {
   router.put('/api/translation/contents/:id', controller.translation.update);
   router.delete('/api/translation/contents/:id', controller.translation.delete);
   router.post('/api/translation/contents/:id/translate-with-ai', controller.translation.translateWithAI);
+  router.post('/api/translation/contents/batch-update-status', controller.translation.batchUpdateStatus);
 
   router.get('/api/translation/tasks', controller.translationTask.list);
   router.get('/api/translation/tasks/:id', controller.translationTask.getDetail);

@@ -40,7 +40,7 @@
         </el-table-column>
         <el-table-column prop="progress" :label="$t('进度')" width="150">
           <template #default="{ row }">
-            <el-progress :percentage="row.textCount > 0 ? Math.round((row.progress / row.textCount) * 100) : 0" />
+            <el-progress :percentage="row.totalCount > 0 ? Math.round((row.textCount / row.totalCount) * 100) : 0" />
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" :label="$t('创建时间')" width="180" />
