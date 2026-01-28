@@ -1,10 +1,12 @@
 const { Service } = require('egg');
 const { Ollama } = require('ollama');
+const axios = require('axios');
 
 class OllamaService extends Service {
   constructor(ctx) {
     super(ctx);
     this._client = null;
+    this._deepseekClient = null;
   }
 
   getMemoryConfig() {
@@ -35,9 +37,43 @@ class OllamaService extends Service {
     return this._client;
   }
 
+  getDeepSeekClient() {
+    if (this._deepseekClient) {
+      return this._deepseekClient;
+    }
+
+    const config = this.ctx.app.config.ollama || {};
+    const deepseekConfig = config.deepseek || {};
+    const baseURL = deepseekConfig.baseUrl || 'https://api.deepseek.com';
+    const apiKey = deepseekConfig.apiKey || 'sk-b9124171e4de4b1f9c4511b9710ba883';
+
+    this._deepseekClient = axios.create({
+      baseURL,
+      timeout: deepseekConfig.timeout || 60000,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    return this._deepseekClient;
+  }
+
   getModel() {
     const config = this.ctx.app.config.ollama || {};
-    return config.model || 'deepseek-r1:7b';
+    const mode = config.mode;
+
+    if (mode === 'deepseek') {
+      const deepseekConfig = config.deepseek || {};
+      return deepseekConfig.model || 'deepseek-chat';
+    }
+
+    return config.model || 'deepseek-chat';
+  }
+
+  getMode() {
+    const config = this.ctx.app.config.ollama || {};
+    return config.mode || 'local';
   }
 
   isEnabled() {
@@ -346,6 +382,12 @@ class OllamaService extends Service {
 
   async embedPrompt(prompt) {
     const memoryConfig = this.getMemoryConfig();
+    const mode = this.getMode();
+
+    if (mode === 'deepseek') {
+      throw new Error('DeepSeek API 模式不支持向量记忆功能，请使用本地 Ollama 模式或关闭向量记忆');
+    }
+
     const client = this.getClient();
     const model = memoryConfig.embeddingModel;
 
@@ -425,8 +467,7 @@ class OllamaService extends Service {
 
   async buildSummary(conversationId, messagesToSummarize, previousSummary) {
     const memoryConfig = this.getMemoryConfig();
-    const client = this.getClient();
-    const model = memoryConfig.summaryModel;
+    const mode = this.getMode();
 
     const transcript = messagesToSummarize.map((m) => `${m.role === 'user' ? '用户' : '助手'}: ${m.content}`).join('\n');
 
@@ -442,14 +483,27 @@ class OllamaService extends Service {
     }
     promptParts.push(`需要总结的对话片段：\n${transcript}`);
 
+    const messages = [
+      { role: 'system', content: system },
+      { role: 'user', content: promptParts.join('\n\n') },
+    ];
+
+    if (mode === 'deepseek') {
+      const response = await this.deepseekChat(messages, {
+        temperature: 0.2,
+        maxTokens: 512,
+      });
+      return response.content;
+    }
+
+    const client = this.getClient();
+    const model = memoryConfig.summaryModel;
+
     const response = await client.chat({
       model,
       think: false,
       stream: false,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: promptParts.join('\n\n') },
-      ],
+      messages,
       options: {
         temperature: 0.2,
         num_predict: 512,
@@ -520,14 +574,61 @@ class OllamaService extends Service {
     return messagesForChat.concat(recentMessages).concat(userMessages);
   }
 
+  async deepseekChat(messages, options = {}) {
+    const deepseekClient = this.getDeepSeekClient();
+    const model = this.getModel();
+    const config = this.ctx.app.config.ollama || {};
+    const deepseekConfig = config.deepseek || {};
+
+    if (!deepseekConfig.apiKey) {
+      throw new Error('DeepSeek API Key 未配置');
+    }
+
+    const requestMessages = (messages || []).map((msg) => {
+      const role = msg?.role === 'user' ? 'user' : msg?.role === 'system' ? 'system' : 'assistant';
+      return {
+        role,
+        content: msg?.content ?? '',
+      };
+    });
+
+    try {
+      const response = await deepseekClient.post('/chat/completions', {
+        model,
+        messages: requestMessages,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens ?? 2000,
+        stream: false,
+      });
+
+      if (response && response.data && response.data.choices && response.data.choices.length > 0) {
+        const choice = response.data.choices[0];
+        if (choice.message && choice.message.content) {
+          return {
+            content: choice.message.content.trim(),
+            model: response.data.model || model,
+            done: true,
+          };
+        }
+      }
+
+      throw new Error(`DeepSeek API 响应格式错误: ${JSON.stringify(response.data)}`);
+    } catch (error) {
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+        throw new Error(`DeepSeek API 请求失败 (${status}): ${data?.error?.message || JSON.stringify(data)}`);
+      }
+      throw new Error(`DeepSeek API 请求失败: ${error.message}`);
+    }
+  }
+
   async ollamaChat(messages, options = {}, context = null) {
     if (!this.isEnabled()) {
       throw new Error('Ollama 未启用');
     }
 
-    const client = this.getClient();
-    const model = this.getModel();
-
+    const mode = this.getMode();
     const requestMessages = (messages || []).map((msg) => {
       const role = msg?.role === 'user' ? 'user' : msg?.role === 'system' ? 'system' : 'assistant';
       return {
@@ -542,13 +643,22 @@ class OllamaService extends Service {
       finalMessages = await this.buildMemoryMessages(context.conversationId, requestMessages);
     }
 
+    if (mode === 'deepseek') {
+      return await this.deepseekChat(finalMessages, options);
+    }
+
+    const client = this.getClient();
+    const model = this.getModel();
+
     const response = await client.chat({
       model,
       think: false,
       messages: finalMessages,
       stream: false,
       options: {
-        temperature: options.temperature ?? 0.7,
+        num_ctx: 2048,
+        num_thread: 8,
+        temperature: options.temperature ?? 0.1,
         num_predict: options.maxTokens ?? 2000,
       },
     });
@@ -567,6 +677,25 @@ class OllamaService extends Service {
   async checkHealth() {
     if (!this.isEnabled()) {
       return false;
+    }
+
+    const mode = this.getMode();
+
+    if (mode === 'deepseek') {
+      try {
+        const deepseekClient = this.getDeepSeekClient();
+        const config = this.ctx.app.config.ollama || {};
+        const deepseekConfig = config.deepseek || {};
+
+        if (!deepseekConfig.apiKey) {
+          return false;
+        }
+
+        await deepseekClient.get('/v1/models');
+        return true;
+      } catch (error) {
+        return false;
+      }
     }
 
     try {

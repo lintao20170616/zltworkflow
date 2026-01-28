@@ -14,7 +14,7 @@
   "3cb2c796-3c23-4c12-aab7-cf765635831e": "Create success",
   "911e5e04-5296-4fc1-8851-32dcc356eb98": "Update success",
   "f462aae9-180a-4826-9876-eebc2139f9ea": "Hint",
-  "d9d6230e-5033-4f12-8ff3-846bd907d5ee": "Delete operation completed successfully",
+  "d9d6230e-5033-4f12-8ff3-846bd907d5ee": "Delete",
   "611744cf-c0d5-4a9c-a453-6bf589c53083": "Failed to update language list",
   "1782853a-4b48-4235-8022-fd02005a7b83": "Enter the language code",
   "c6c19c50-d26f-4e57-bb51-b4321ac8c81d": "Enter the language name",
@@ -68,5 +68,6 @@
   "59c52cf6-6c22-4139-8737-d62c82cef685": "Confirm backfilling of translation results into language files",
   "5a0dfd3d-c88e-4ba8-9ee9-f68d8cec2824": "Translation task management",
   "239ccd74-2bae-4a2f-a9ef-513511b2a2f3": "Add new task",
-  "063f75b2-f867-400e-92d0-c3d9d53d7d20": "View details"
+  "063f75b2-f867-400e-92d0-c3d9d53d7d20": "View details",
+  "c614e110-b5bf-45e3-a105-00e65da454ea": "Menu Management"
 }

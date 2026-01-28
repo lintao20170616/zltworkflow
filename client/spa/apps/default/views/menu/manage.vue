@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>菜单管理</span>
+          <span>{{ $t('菜单管理') }}</span>
           <div class="header-actions">
             <el-select v-model="query.systemId" placeholder="选择系统" clearable style="width: 200px" @change="handleSystemChange">
               <el-option v-for="s in systems" :key="s.id" :label="`${s.name}（${s.code}）`" :value="s.id" />
