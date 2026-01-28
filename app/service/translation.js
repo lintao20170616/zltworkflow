@@ -157,6 +157,28 @@ class TranslationService extends Service {
     }
   }
 
+  async getSourceTextCount() {
+    const { ctx } = this;
+    const Op = ctx.app.Sequelize.Op;
+
+    try {
+      const count = await ctx.model.Translation.count({
+        distinct: true,
+        col: 'key',
+        where: {
+          sourceText: {
+            [Op.ne]: null,
+          },
+        },
+      });
+
+      return { success: true, data: { count } };
+    } catch (error) {
+      ctx.logger.error('[TranslationService] getSourceTextCount error:', error);
+      return { success: false, message: '获取源文案数量失败' };
+    }
+  }
+
   async translateWithAI(translationId) {
     const { ctx } = this;
     try {

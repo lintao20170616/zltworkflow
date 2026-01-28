@@ -290,3 +290,11 @@ export interface BatchUpdateStatusResponse {
 export const batchUpdateTranslationStatus = async (data: BatchUpdateStatusRequest): Promise<BatchUpdateStatusResponse> => {
   return http.api.post('/translation/contents/batch-update-status', { data });
 };
+
+export const getSourceTextCount = async (): Promise<{ count: number }> => {
+  return http.api.get('/translation/source-text-count');
+};
+
+export const getWeeklyTaskCount = async (): Promise<Record<string, number>> => {
+  return http.api.get('/translation/tasks/weekly-count');
+};

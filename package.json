@@ -90,6 +90,7 @@
     "commander": "^14.0.2",
     "cross-env": "^10.1.0",
     "dayjs": "^1.11.13",
+    "echarts": "^6.0.0",
     "egg": "3.32.0",
     "egg-redis": "^2.6.1",
     "egg-sequelize": "6.0.0",

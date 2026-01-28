@@ -53,6 +53,8 @@ module.exports = (app) => {
   router.post('/api/translation/contents/batch-update-status', controller.translation.batchUpdateStatus);
 
   router.get('/api/translation/tasks', controller.translationTask.list);
+  router.get('/api/translation/tasks/statistics', controller.translationTask.getStatistics);
+  router.get('/api/translation/tasks/weekly-count', controller.translationTask.getWeeklyTaskCount);
   router.get('/api/translation/tasks/:id', controller.translationTask.getDetail);
   router.get('/api/translation/tasks/:id/translations', controller.translationTask.getTranslations);
   router.post('/api/translation/tasks', controller.translationTask.create);
@@ -61,7 +63,7 @@ module.exports = (app) => {
   router.post('/api/translation/tasks/:id/backfill', controller.translationTask.backfill);
   router.post('/api/translation/tasks/:id/batch-translate-with-ai', controller.translationTask.batchTranslateWithAI);
   router.delete('/api/translation/tasks/:id', controller.translationTask.delete);
-  router.get('/api/translation/tasks/statistics', controller.translationTask.getStatistics);
+  router.get('/api/translation/source-text-count', controller.translation.getSourceTextCount);
 
   router.get('/api/translation/pullTranslations', controller.translation.pullTranslations);
   router.post('/api/translation/push-default-json', controller.translation.pushDefaultJson);

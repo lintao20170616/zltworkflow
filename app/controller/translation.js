@@ -199,6 +199,28 @@ class TranslationController extends Controller {
       ctx.status = 500;
     }
   }
+
+  async getSourceTextCount() {
+    const { ctx } = this;
+    if (!ctx.session.user?.id) {
+      ctx.body = { code: 401, message: '未登录', data: null };
+      ctx.status = 401;
+      return;
+    }
+    try {
+      const result = await ctx.service.translation.getSourceTextCount();
+      if (!result.success) {
+        ctx.body = { code: 400, message: result.message, data: null };
+        ctx.status = 400;
+        return;
+      }
+      ctx.body = { code: 0, message: 'success', data: result.data };
+    } catch (error) {
+      ctx.logger.error('[TranslationController] getSourceTextCount error:', error);
+      ctx.body = { code: 500, message: '服务器错误', data: null };
+      ctx.status = 500;
+    }
+  }
 }
 
 module.exports = TranslationController;

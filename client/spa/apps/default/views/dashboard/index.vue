@@ -48,6 +48,18 @@
           </div>
         </div>
       </el-card>
+
+      <el-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon translation-icon">
+            <el-icon :size="40"><document /></el-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ sourceTextCount }}</div>
+            <div class="stat-label">翻译源文案数量</div>
+          </div>
+        </div>
+      </el-card>
     </div>
 
     <el-row :gutter="20" class="charts-row">
@@ -86,6 +98,19 @@
               <el-progress :percentage="item.percentage" :color="item.color" :stroke-width="20" :show-text="false" />
             </div>
           </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="20" class="charts-row">
+      <el-col :span="24">
+        <el-card>
+          <template #header>
+            <div class="card-header">
+              <span>近1周翻译任务数量</span>
+            </div>
+          </template>
+          <div ref="taskChartRef" class="line-chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -146,15 +171,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Setting, User, UserFilled, Avatar, Refresh, Menu, Lock, ChatDotRound, DataAnalysis } from '@element-plus/icons-vue';
+import { Setting, User, UserFilled, Avatar, Refresh, Menu, Lock, ChatDotRound, DataAnalysis, Document } from '@element-plus/icons-vue';
 import { getUserList, type UserListItem } from '@app/service/auth';
 import { getSystemList, type SystemItem } from '@app/service/system';
+import { getSourceTextCount, getWeeklyTaskCount } from '@app/service/translation';
 
 const userList = ref<UserListItem[]>([]);
 const systemList = ref<SystemItem[]>([]);
 const loading = ref(false);
+const sourceTextCount = ref(0);
+const weeklyTaskCount = ref<Record<string, number>>({});
+const taskChartRef = ref<HTMLDivElement>();
+let taskChart: any = null;
 
 const userCount = computed(() => userList.value.length);
 const systemCount = computed(() => systemList.value.length);
@@ -212,12 +242,126 @@ const systemStatusData = computed(() => {
   ];
 });
 
+const initTaskChart = async () => {
+  if (!taskChartRef.value) return;
+
+  try {
+    const echartsModule = await import('echarts');
+    const echartsLib = echartsModule.default || echartsModule;
+    taskChart = echartsLib.init(taskChartRef.value);
+
+    const updateChart = () => {
+      if (!taskChart) return;
+
+      const dates = Object.keys(weeklyTaskCount.value).sort();
+      const values = dates.map((date) => weeklyTaskCount.value[date] || 0);
+      const labels = dates.map((date) => {
+        const d = new Date(date);
+        return `${d.getMonth() + 1}/${d.getDate()}`;
+      });
+
+      const option = {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'line',
+          },
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true,
+        },
+        xAxis: {
+          type: 'category',
+          boundaryGap: false,
+          data: labels,
+        },
+        yAxis: {
+          type: 'value',
+        },
+        series: [
+          {
+            name: '任务数量',
+            type: 'line',
+            smooth: true,
+            data: values,
+            itemStyle: {
+              color: '#409eff',
+            },
+            areaStyle: {
+              color: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [
+                  {
+                    offset: 0,
+                    color: 'rgba(64, 158, 255, 0.3)',
+                  },
+                  {
+                    offset: 1,
+                    color: 'rgba(64, 158, 255, 0.1)',
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      };
+
+      taskChart.setOption(option);
+    };
+
+    updateChart();
+
+    const resizeHandler = () => {
+      taskChart?.resize();
+    };
+
+    window.addEventListener('resize', resizeHandler);
+
+    return () => {
+      window.removeEventListener('resize', resizeHandler);
+    };
+  } catch (error) {
+    console.error('Failed to load echarts:', error);
+  }
+};
+
 const loadData = async () => {
   loading.value = true;
   try {
-    const [users, systems] = await Promise.all([getUserList(), getSystemList()]);
+    const [users, systems, sourceCount, weeklyCount] = await Promise.all([getUserList(), getSystemList(), getSourceTextCount(), getWeeklyTaskCount()]);
     userList.value = users;
     systemList.value = systems;
+    sourceTextCount.value = sourceCount.count;
+    weeklyTaskCount.value = weeklyCount;
+
+    await nextTick();
+    if (taskChartRef.value && !taskChart) {
+      cleanupChart = await initTaskChart();
+    } else if (taskChart) {
+      const dates = Object.keys(weeklyTaskCount.value).sort();
+      const values = dates.map((date) => weeklyTaskCount.value[date] || 0);
+      const labels = dates.map((date) => {
+        const d = new Date(date);
+        return `${d.getMonth() + 1}/${d.getDate()}`;
+      });
+      taskChart.setOption({
+        xAxis: {
+          data: labels,
+        },
+        series: [
+          {
+            data: values,
+          },
+        ],
+      });
+    }
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '获取数据失败');
   } finally {
@@ -225,8 +369,20 @@ const loadData = async () => {
   }
 };
 
+let cleanupChart: (() => void) | null = null;
+
 onMounted(() => {
   loadData();
+});
+
+onBeforeUnmount(() => {
+  if (cleanupChart) {
+    cleanupChart();
+  }
+  if (taskChart) {
+    taskChart.dispose();
+    taskChart = null;
+  }
 });
 </script>
 
@@ -239,7 +395,7 @@ onMounted(() => {
 
 .stats-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 20px;
   margin-bottom: 20px;
 }
@@ -284,6 +440,10 @@ onMounted(() => {
 
 .role-icon {
   background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.translation-icon {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
 }
 
 .stat-info {
@@ -339,6 +499,11 @@ onMounted(() => {
   color: #303133;
 }
 
+.line-chart-container {
+  width: 100%;
+  height: 400px;
+}
+
 .features-card {
   margin-top: 20px;
 }
@@ -386,7 +551,7 @@ onMounted(() => {
 
 @media (width <= 1200px) {
   .stats-cards {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .features-grid {

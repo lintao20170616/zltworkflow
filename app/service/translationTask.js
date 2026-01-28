@@ -138,6 +138,60 @@ class TranslationTaskService extends Service {
     };
   }
 
+  async getWeeklyTaskCount() {
+    const { ctx } = this;
+    const Op = ctx.app.Sequelize.Op;
+    const Sequelize = ctx.app.Sequelize;
+
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(now);
+    endDate.setHours(23, 59, 59, 999);
+
+    const tasks = await ctx.model.TranslationTask.findAll({
+      where: {
+        createdAt: {
+          [Op.gte]: sevenDaysAgo,
+          [Op.lte]: endDate,
+        },
+      },
+      attributes: [
+        [Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), Sequelize.literal("'%Y-%m-%d'")), 'date'],
+        [Sequelize.fn('COUNT', Sequelize.col('id')), 'count'],
+      ],
+      group: [Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), Sequelize.literal("'%Y-%m-%d'"))],
+      order: [[Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), Sequelize.literal("'%Y-%m-%d'")), 'ASC']],
+      raw: true,
+    });
+
+    const result = {};
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(sevenDaysAgo);
+      date.setDate(date.getDate() + i);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      result[dateStr] = 0;
+    }
+
+    tasks.forEach((task) => {
+      if (task.date) {
+        const dateStr = String(task.date).slice(0, 10);
+        if (result[dateStr] !== undefined) {
+          result[dateStr] = Number(task.count);
+        }
+      }
+    });
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
   async generateTaskNumber() {
     const { ctx } = this;
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
