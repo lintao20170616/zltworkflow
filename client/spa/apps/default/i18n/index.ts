@@ -16,12 +16,29 @@ const messages = {
   'en-US': enUS || defaultMessages,
 };
 
+const LOCALE_KEY = 'zlt-locale';
+const supportedLocales = ['zh-CN', 'en-US'] as const;
+type LocaleType = (typeof supportedLocales)[number];
+
+const savedLocale = (): LocaleType => {
+  const v = localStorage.getItem(LOCALE_KEY);
+  return v && supportedLocales.includes(v as LocaleType) ? (v as LocaleType) : 'zh-CN';
+};
+
 const i18n = createI18n({
   legacy: false,
-  locale: 'en-US',
+  locale: savedLocale(),
   fallbackLocale: 'zh-CN',
   messages,
 });
+
+export function setLocale(locale: LocaleType) {
+  if (!supportedLocales.includes(locale)) return;
+  (i18n.global.locale as { value: LocaleType }).value = locale;
+  localStorage.setItem(LOCALE_KEY, locale);
+}
+
+export { supportedLocales, type LocaleType };
 
 const originalT = i18n.global.t;
 
@@ -30,10 +47,10 @@ Object.entries(defaultMessages).forEach(([uuid, text]) => {
   reverseMap[text] = uuid;
 });
 
-i18n.global.t = function (key: string, ...args: any[]) {
+(i18n.global as any).t = function (key: string, ...args: any[]) {
   const uuid = reverseMap[key];
   if (uuid) {
-    const translated = originalT.call(this, uuid, ...args);
+    const translated = (originalT as any).call(this, uuid, ...args);
     if (translated && translated !== uuid) {
       return translated;
     }

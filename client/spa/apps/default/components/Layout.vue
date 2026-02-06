@@ -25,7 +25,17 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="zh-CN" :class="{ 'is-active': locale === 'zh-CN' }">
+                  <el-icon><component :is="Reading" /></el-icon>
+                  <span>简体中文</span>
+                  <el-icon v-if="locale === 'zh-CN'" class="check-icon"><check /></el-icon>
+                </el-dropdown-item>
+                <el-dropdown-item command="en-US" :class="{ 'is-active': locale === 'en-US' }">
+                  <el-icon><component :is="Reading" /></el-icon>
+                  <span>English</span>
+                  <el-icon v-if="locale === 'en-US'" class="check-icon"><check /></el-icon>
+                </el-dropdown-item>
+                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -51,9 +61,13 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
-import { Odometer, User, ChatLineRound, ArrowDown, Setting, Menu as MenuIcon, HomeFilled } from '@element-plus/icons-vue';
+import { Odometer, User, ChatLineRound, ArrowDown, Setting, Menu as MenuIcon, HomeFilled, Reading, Check } from '@element-plus/icons-vue';
+import { useI18n } from 'vue-i18n';
+import { setLocale, supportedLocales, type LocaleType } from '../i18n';
 import { useUserStore, useMenuStore } from '../store';
 import NavBarMenu from './NavBarMenu.vue';
+
+const { locale } = useI18n();
 
 const route = useRoute();
 const router = useRouter();
@@ -279,6 +293,8 @@ const handleCommand = async (command: string) => {
   if (command === 'logout') {
     await userStore.logout();
     router.push('/login');
+  } else if (supportedLocales.includes(command as LocaleType)) {
+    setLocale(command as LocaleType);
   }
 };
 onMounted(() => {});
@@ -366,6 +382,21 @@ onMounted(() => {});
       margin-left: 8px;
       margin-right: 8px;
     }
+  }
+}
+
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .check-icon {
+    margin-left: auto;
+    color: var(--el-color-primary);
+  }
+
+  &.is-active {
+    color: var(--el-color-primary);
   }
 }
 
