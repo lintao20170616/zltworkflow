@@ -6,8 +6,8 @@
       </div>
       <el-button type="danger" size="small" :icon="Delete" circle @click.stop="$emit('delete', component.id)" />
     </div>
-    <div class="component-wrapper" :style="component.style" :class="component.class">
-      <component :is="component.type" v-bind="component.props">
+    <div class="component-wrapper">
+      <component :is="component.type" v-bind="component.props" :style="component.style" :class="component.class">
         <template v-if="component.type === 'el-table' && component.props.columns">
           <el-table-column
             v-for="col in component.props.columns"
@@ -32,7 +32,14 @@
           {{ component.text }}
         </template>
         <template v-else-if="canNest && component.children && component.children.length > 0">
-          <div class="nest-container" :class="{ 'nest-container-full': isLayoutComponent }" @drop="handleDrop" @dragover.prevent @dragenter.prevent>
+          <div
+            class="nest-container"
+            :class="{ 'nest-container-full': isLayoutComponent, 'nest-container-row': component.type === 'el-row' }"
+            :style="component.type === 'el-row' && component.props.gutter ? { '--el-row-gutter': component.props.gutter + 'px' } : {}"
+            @drop="handleDrop"
+            @dragover.prevent
+            @dragenter.prevent
+          >
             <vue-draggable
               v-model="children"
               :animation="200"
@@ -103,7 +110,7 @@ const children = computed({
   },
 });
 
-const textContentComponents = ['el-button', 'el-text', 'el-tag', 'el-link', 'el-alert', 'el-avatar'];
+const textContentComponents = ['el-button', 'el-text', 'el-tag', 'el-link', 'el-alert', 'el-avatar', 'el-divider'];
 
 function hasTextContent(type: string): boolean {
   return textContentComponents.includes(type);
@@ -192,7 +199,7 @@ function getDefaultProps(type: string): Record<string, any> {
       border: true,
     },
     'el-tag': { type: '', size: 'default', effect: 'light' },
-    'el-row': { gutter: 20 },
+    'el-row': { gutter: 0 },
     'el-col': { span: 12 },
     'el-container': {},
   };
@@ -213,36 +220,97 @@ function getDefaultText(type: string): string | undefined {
 .component-item {
   position: relative;
   display: inline-block;
-  margin-bottom: 12px;
-  padding: 4px;
-  border: 2px solid transparent;
-  border-radius: 4px;
-  transition: all 0.2s;
-  min-width: 100px;
-  min-height: 50px;
   vertical-align: top;
 }
 
-.component-item:hover {
-  background: #f0f9ff;
+.component-item:hover:not(.selected) {
+  outline: 1px dashed #409eff;
+  outline-offset: 2px;
 }
 
 .component-item.selected {
-  border-color: #409eff;
-  background: #ecf5ff;
+  outline: 2px solid #409eff;
+  outline-offset: 2px;
 }
 
 .component-wrapper {
   pointer-events: none;
   display: inline-block;
-  min-width: 100px;
-  min-height: 50px;
   vertical-align: top;
 }
 
 .component-item.can-nest .component-wrapper {
   pointer-events: auto;
   display: block;
+  width: 100%;
+}
+
+.component-item.can-nest .nest-container .component-item {
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.component-item.can-nest .nest-container-row .component-item {
+  width: auto;
+  display: inline-block;
+  flex-shrink: 0;
+  padding-left: calc(var(--el-row-gutter, 0) / 2);
+  padding-right: calc(var(--el-row-gutter, 0) / 2);
+  box-sizing: border-box;
+}
+
+.component-item.can-nest .nest-container-row .component-item .component-wrapper {
+  width: auto;
+  min-width: 100px;
+}
+
+.component-item.can-nest .nest-container-row .component-item .component-wrapper > [class*='el-select'],
+.component-item.can-nest .nest-container-row .component-item .component-wrapper > [class*='el-input'],
+.component-item.can-nest .nest-container-row .component-item .component-wrapper > [class*='el-date-picker'] {
+  width: 200px;
+  min-width: 150px;
+}
+
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper {
+  width: auto;
+  min-width: 200px;
+}
+
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-select'],
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-input'],
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-date-picker'],
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-textarea'],
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-input-number'] {
+  width: auto;
+  min-width: 200px;
+}
+
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-input'] :deep(.el-input__wrapper),
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-select'] :deep(.el-select__wrapper),
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-date-picker'] :deep(.el-input__wrapper) {
+  width: auto;
+  min-width: 200px;
+}
+
+.component-item.can-nest .nest-container-row .component-item.is-layout {
+  width: 100%;
+  display: block;
+}
+
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item {
+  width: 100%;
+}
+
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item:not(.is-layout) {
+  width: auto;
+  display: inline-block;
+}
+
+.component-item.can-nest .nest-container .component-item .component-wrapper {
+  width: auto;
+}
+
+.component-item.can-nest .nest-container:not(.nest-container-row) .component-item.is-layout .component-wrapper {
   width: 100%;
 }
 
@@ -257,21 +325,38 @@ function getDefaultText(type: string): string | undefined {
 }
 
 .nest-container {
-  min-height: 50px;
-  padding: 8px;
   display: inline-block;
   width: auto;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .nest-container-full {
   width: 100%;
   display: block;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.nest-container-row {
+  width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.component-item.can-nest .component-wrapper > [class*='el-row'] {
+  width: 100%;
+}
+
+.component-item.can-nest .nest-container-row {
+  margin-left: calc(var(--el-row-gutter, 0) / -2);
+  margin-right: calc(var(--el-row-gutter, 0) / -2);
 }
 
 .nest-empty {
-  min-height: 80px;
+  min-height: 60px;
   width: 100%;
-  padding: 20px;
+  padding: 16px;
   border: 2px dashed #dcdfe6;
   border-radius: 4px;
   transition: all 0.2s;
@@ -298,12 +383,16 @@ function getDefaultText(type: string): string | undefined {
 
 .component-actions {
   position: absolute;
-  top: -12px;
-  right: -12px;
+  top: -8px;
+  right: -8px;
   z-index: 10;
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 2px;
 }
 
 .drag-handle {

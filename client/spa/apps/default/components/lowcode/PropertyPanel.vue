@@ -16,54 +16,21 @@
             <div class="group-title">{{ group.name }}</div>
           </div>
           <el-form-item v-for="property in group.properties" :key="property.key" :label="property.label" :required="property.required">
-            <el-input
-              v-if="property.type === 'input'"
-              v-model="formData[property.key]"
-              :placeholder="property.placeholder"
+            <style-editor v-if="property.type === 'style'" :model-value="getModelValue(property)" @update:model-value="handleStyleUpdate(property, $event)" />
+            <component
+              :is="getComponentName(property.type)"
+              v-else
+              v-bind="getComponentProps(property)"
+              :model-value="getModelValue(property)"
+              @update:model-value="handleModelUpdate(property, $event)"
               @change="handlePropertyChange(property)"
-            />
-            <el-input
-              v-else-if="property.type === 'text'"
-              v-model="formData[property.key]"
-              :placeholder="property.placeholder"
               @input="handlePropertyChange(property)"
-            />
-            <el-input
-              v-else-if="property.type === 'textarea'"
-              v-model="formData[property.key]"
-              type="textarea"
-              :rows="3"
-              :placeholder="property.placeholder"
-              @change="handlePropertyChange(property)"
-            />
-            <el-input-number
-              v-else-if="property.type === 'number'"
-              v-model="formData[property.key]"
-              :min="property.min"
-              :max="property.max"
-              :step="property.step"
-              :placeholder="property.placeholder"
-              @change="handlePropertyChange(property)"
-            />
-            <el-select
-              v-else-if="property.type === 'select'"
-              v-model="formData[property.key]"
-              :placeholder="property.placeholder"
-              style="width: 100%"
-              @change="handlePropertyChange(property)"
+              @blur="handleBlur(property)"
             >
-              <el-option v-for="option in property.options" :key="option.value" :label="option.label" :value="option.value" />
-            </el-select>
-            <el-switch v-else-if="property.type === 'switch'" v-model="formData[property.key]" @change="handlePropertyChange(property)" />
-            <el-color-picker v-else-if="property.type === 'color'" v-model="formData[property.key]" @change="handlePropertyChange(property)" />
-            <el-input
-              v-else-if="property.type === 'json' || property.type === 'style'"
-              v-model="jsonInputs[property.key]"
-              type="textarea"
-              :rows="4"
-              :placeholder="property.placeholder || '{}'"
-              @blur="handleJsonChange(property.key)"
-            />
+              <template v-if="property.type === 'select' && property.options">
+                <el-option v-for="option in property.options" :key="option.value" :label="option.label" :value="option.value" />
+              </template>
+            </component>
             <div v-if="property.description" class="property-description">
               {{ property.description }}
             </div>
@@ -78,6 +45,7 @@
 import { computed, watch, ref } from 'vue';
 import { useLowcodeStore } from '@app/store/lowcode';
 import { getPropertySchemas, getComponentSchema, type PropertySchema } from './componentSchemas';
+import StyleEditor from './StyleEditor.vue';
 
 const store = useLowcodeStore();
 const selectedComponent = computed(() => store.selectedComponent);
@@ -135,7 +103,6 @@ watch(
           newFormData[schema.key] = component.text ?? schema.defaultValue ?? '';
         } else if (schema.type === 'style') {
           newFormData[schema.key] = component.style ?? schema.defaultValue ?? {};
-          newJsonInputs[schema.key] = JSON.stringify(newFormData[schema.key], null, 2);
         } else if (component.props.hasOwnProperty(schema.key)) {
           newFormData[schema.key] = component.props[schema.key];
         } else if (schema.defaultValue !== undefined) {
@@ -144,7 +111,7 @@ watch(
           newFormData[schema.key] = getDefaultValue(schema.type);
         }
 
-        if (schema.type === 'json' || schema.type === 'style') {
+        if (schema.type === 'json') {
           if (!newJsonInputs[schema.key]) {
             newJsonInputs[schema.key] = JSON.stringify(newFormData[schema.key], null, 2);
           }
@@ -167,26 +134,9 @@ const handlePropertyChange = (property: PropertySchema) => {
   if (property.type === 'text') {
     store.updateComponentText(selectedComponent.value.id, formData.value[property.key] || '');
   } else if (property.type === 'style') {
-    try {
-      const style = JSON.parse(jsonInputs.value[property.key] || '{}');
-      store.updateComponentStyle(selectedComponent.value.id, style);
-      formData.value[property.key] = style;
-    } catch (error) {
-      console.error('Invalid style JSON:', error);
-    }
+    const style = formData.value[property.key] || {};
+    store.updateComponentStyle(selectedComponent.value.id, style);
   } else {
-    const props: Record<string, any> = {};
-    propertySchemas.value.forEach((schema) => {
-      if (schema.type !== 'text' && schema.type !== 'style' && formData.value.hasOwnProperty(schema.key)) {
-        props[schema.key] = formData.value[schema.key];
-      }
-    });
-    store.updateComponentProps(selectedComponent.value.id, props);
-  }
-};
-
-const handleChange = () => {
-  if (selectedComponent.value) {
     const props: Record<string, any> = {};
     propertySchemas.value.forEach((schema) => {
       if (schema.type !== 'text' && schema.type !== 'style' && formData.value.hasOwnProperty(schema.key)) {
@@ -227,6 +177,73 @@ function getDefaultValue(type: string): any {
       return '';
   }
 }
+
+const getComponentName = (type: string): string => {
+  const componentMap: Record<string, string> = {
+    input: 'el-input',
+    text: 'el-input',
+    textarea: 'el-input',
+    number: 'el-input-number',
+    select: 'el-select',
+    switch: 'el-switch',
+    color: 'el-color-picker',
+    json: 'el-input',
+    style: 'el-input',
+  };
+  return componentMap[type] || 'el-input';
+};
+
+const getComponentProps = (property: PropertySchema): Record<string, any> => {
+  const props: Record<string, any> = {};
+
+  if (property.type === 'input' || property.type === 'text') {
+    props.placeholder = property.placeholder;
+  } else if (property.type === 'textarea' || property.type === 'json') {
+    props.type = 'textarea';
+    props.rows = property.type === 'json' ? 4 : 3;
+    props.placeholder = property.placeholder || (property.type === 'json' ? '{}' : '');
+  } else if (property.type === 'number') {
+    if (property.min !== undefined) props.min = property.min;
+    if (property.max !== undefined) props.max = property.max;
+    if (property.step !== undefined) props.step = property.step;
+    props.placeholder = property.placeholder;
+  } else if (property.type === 'select') {
+    props.placeholder = property.placeholder;
+    props.style = { width: '100%' };
+  }
+
+  return props;
+};
+
+const getModelValue = (property: PropertySchema): any => {
+  if (property.type === 'json') {
+    return jsonInputs.value[property.key] || '';
+  }
+  if (property.type === 'style') {
+    return formData.value[property.key] || {};
+  }
+  return formData.value[property.key];
+};
+
+const handleModelUpdate = (property: PropertySchema, value: any): void => {
+  if (property.type === 'json') {
+    jsonInputs.value[property.key] = value;
+  } else {
+    formData.value[property.key] = value;
+  }
+};
+
+const handleBlur = (property: PropertySchema): void => {
+  if (property.type === 'json') {
+    handleJsonChange(property.key);
+  }
+};
+
+const handleStyleUpdate = (property: PropertySchema, style: Record<string, string>) => {
+  if (!selectedComponent.value) return;
+  store.updateComponentStyle(selectedComponent.value.id, style);
+  formData.value[property.key] = style;
+};
 </script>
 
 <style scoped>

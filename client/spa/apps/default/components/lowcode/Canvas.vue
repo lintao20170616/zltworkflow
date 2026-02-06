@@ -4,36 +4,15 @@
       <el-empty description="从左侧组件库拖拽组件到此处" />
     </div>
     <div v-else class="canvas-content">
-      <vue-draggable
-        v-model="components"
-        :animation="200"
-        handle=".drag-handle"
-        ghost-class="ghost"
-        chosen-class="chosen"
-        drag-class="drag"
-        group="components"
-        @start="handleDragStart"
-        @end="handleDragEnd"
-        @update="handleDragUpdate"
-      >
-        <component-item
-          v-for="component in components"
-          :key="component.id"
-          :component="component"
-          :selected="selectedComponentId === component.id"
-          @select="handleSelect"
-          @delete="handleDelete"
-        />
-      </vue-draggable>
+      <lowcode-renderer-wrapper :components="components" :selected-component-id="selectedComponentId" @select="handleSelect" @delete="handleDelete" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { VueDraggable } from 'vue-draggable-plus';
 import { useLowcodeStore, type ComponentConfig } from '@app/store/lowcode';
-import ComponentItem from './ComponentItem.vue';
+import LowcodeRendererWrapper from './LowcodeRendererWrapper.vue';
 
 const store = useLowcodeStore();
 
@@ -141,7 +120,7 @@ function getDefaultProps(type: string): Record<string, any> {
       border: true,
     },
     'el-tag': { type: '', size: 'default', effect: 'light' },
-    'el-row': { gutter: 20 },
+    'el-row': { gutter: 0 },
     'el-col': { span: 12 },
     'el-container': {},
   };
@@ -181,6 +160,7 @@ function getDefaultText(type: string): string | undefined {
   background: #fff;
   min-height: 100%;
   padding: 20px;
+  line-height: normal;
 }
 
 .ghost {

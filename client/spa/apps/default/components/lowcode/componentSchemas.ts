@@ -252,6 +252,14 @@ export const componentSchemas: ComponentSchema[] = [
     category: 'basic',
     properties: [
       {
+        key: 'text',
+        label: '文本内容',
+        type: 'text',
+        defaultValue: '',
+        placeholder: '请输入文本内容（可选）',
+        group: '内容',
+      },
+      {
         key: 'direction',
         label: '方向',
         type: 'select',
@@ -1862,4 +1870,20 @@ export function getPropertySchemas(type: string): PropertySchema[] {
 export function canComponentNest(type: string): boolean {
   const schema = getComponentSchema(type);
   return schema?.canNest === true;
+}
+
+export function getChildComponentName(parentType: string, propKey: string): string {
+  const childComponentMap: Record<string, Record<string, string>> = {
+    'el-table': {
+      columns: 'el-table-column',
+    },
+    'el-list': {
+      data: 'el-list-item',
+    },
+    'el-select': {
+      options: 'el-option',
+    },
+  };
+
+  return childComponentMap[parentType]?.[propKey] || '';
 }

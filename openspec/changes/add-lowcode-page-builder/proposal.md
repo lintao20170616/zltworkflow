@@ -8,19 +8,25 @@
 
 - **新增低代码页面构建工具核心功能**
   - 组件库管理：提供Element Plus基础组件（按钮、输入框、选择器、表格、表单等），支持拖拽到画布
-  - 画布编辑：支持组件拖放、选中、移动、删除、层级调整
+  - 画布编辑：支持组件拖放、选中、移动、删除、层级调整，使用vue-draggable-plus实现流畅拖拽体验
   - 嵌套布局：布局组件（Row/Col、Container等）支持嵌套子组件，实现复杂页面布局
   - 组件插入：支持将组件拖拽插入到布局组件内部，支持嵌套拖拽排序
   - 属性配置：右侧面板实时显示选中组件的属性，支持修改并实时预览
-  - 双端预览：Web模拟器支持PC端和移动端视图切换，实时预览配置效果
+    - 自定义样式编辑器：提供键值对输入方式，支持CSS样式配置
+    - 属性分组：按布局、样式、状态等分组展示
+  - 所见即所得（WYSIWYG）：编辑器画布展示效果与最终渲染效果一致
   - JSON生成：将页面配置生成标准JSON格式，支持导出和复制
   - 页面渲染：接收JSON配置动态渲染页面，支持接口数据绑定
+    - el-row/el-col特殊处理：避免多余的渲染器包装，确保布局正确
 
 - **新增辅助功能**
   - 布局容器：提供栅格布局（Row/Col）、容器布局（Container）等容器组件，支持嵌套和组件插入
+    - el-row gutter支持：栅格间隔设置，在编辑器和预览中正确应用
+    - 嵌套组件层级样式：嵌套组件有正确的z-index和选中覆盖层
   - 快捷操作：支持复制、粘贴、撤销、重做等编辑操作
   - 代码预览：可查看生成的JSON配置代码
   - 模板保存：本地保存常用页面模板
+  - 项目列表管理：支持项目创建、编辑、删除、复制，使用LocalStorage存储
 
 - **技术架构**
   - 前端编辑器：Vue 3 + Composition API + Pinia + Element Plus
@@ -41,8 +47,10 @@
     - 新增组件库：`client/spa/apps/default/components/lowcode/ComponentLibrary.vue`
     - 新增画布组件：`client/spa/apps/default/components/lowcode/Canvas.vue`
     - 新增组件项组件：`client/spa/apps/default/components/lowcode/ComponentItem.vue`
+    - 新增组件包装器：`client/spa/apps/default/components/lowcode/LowcodeRendererWrapper.vue`
     - 新增属性面板：`client/spa/apps/default/components/lowcode/PropertyPanel.vue`
-    - 新增预览组件：`client/spa/apps/default/components/lowcode/Preview.vue`
+    - 新增样式编辑器：`client/spa/apps/default/components/lowcode/StyleEditor.vue`
+    - 新增预览组件：`client/spa/apps/default/components/lowcode/Preview.vue`（当前已隐藏）
     - 更新路由配置：`client/spa/apps/default/router/index.ts`
     - 更新store导出：`client/spa/apps/default/store/index.ts`
   - 后端（可选，第一版暂不实现）：
