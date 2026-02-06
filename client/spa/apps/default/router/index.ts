@@ -63,6 +63,18 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'lowcode/projects',
+        name: 'LowcodeProjects',
+        component: () => import('../views/lowcode/projects/index.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'lowcode-editor',
+        name: 'LowcodeEditor',
+        component: () => import('../views/lowcode/editor.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'projects/:id',
         name: 'TranslationProjectDetail',
         component: () => import('../views/translation/projects/detail.vue'),
@@ -80,6 +92,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/translation/tasks/detail.vue'),
         meta: { requiresAuth: true },
       },
+
       {
         path: `/:systemId/:pathMatch(.*)+`,
         name: 'Iframe',
