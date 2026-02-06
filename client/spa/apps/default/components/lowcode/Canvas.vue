@@ -11,6 +11,7 @@
         ghost-class="ghost"
         chosen-class="chosen"
         drag-class="drag"
+        group="components"
         @start="handleDragStart"
         @end="handleDragEnd"
         @update="handleDragUpdate"
@@ -92,14 +93,54 @@ const handleDragUpdate = () => {
 function getDefaultProps(type: string): Record<string, any> {
   const defaultPropsMap: Record<string, Record<string, any>> = {
     'el-button': { type: 'primary', size: 'default' },
+    'el-text': { type: '', size: 'default' },
+    'el-link': { type: 'default', href: '#', underline: true },
+    'el-divider': { direction: 'horizontal', contentPosition: 'center' },
+    'el-space': { size: 'default', direction: 'horizontal' },
+    'el-image': { src: 'https://via.placeholder.com/300x200', fit: 'fill' },
+    'el-avatar': { size: 'default', shape: 'circle' },
+    'el-badge': { value: '1', max: 99, type: 'danger' },
+    'el-alert': { type: 'info', closable: true, showIcon: true },
+    'el-form': { labelWidth: '100px', labelPosition: 'right' },
+    'el-form-item': { label: '表单项', prop: '' },
     'el-input': { placeholder: '请输入内容' },
-    'el-select': { placeholder: '请选择' },
+    'el-textarea': { placeholder: '请输入内容', rows: 3 },
+    'el-input-number': { placeholder: '请输入数字', step: 1 },
+    'el-select': {
+      placeholder: '请选择',
+      options: [
+        { label: '选项1', value: 'option1' },
+        { label: '选项2', value: 'option2' },
+        { label: '选项3', value: 'option3' },
+      ],
+    },
     'el-date-picker': { type: 'date', placeholder: '选择日期' },
     'el-checkbox': { label: '选项' },
     'el-radio': { label: '选项' },
     'el-switch': { activeText: '开启', inactiveText: '关闭' },
-    'el-table': { data: [], border: true },
+    'el-slider': { min: 0, max: 100, step: 1 },
+    'el-rate': { max: 5 },
+    'el-table': {
+      data: [
+        { name: '张三', age: 20, address: '北京市' },
+        { name: '李四', age: 25, address: '上海市' },
+      ],
+      columns: [
+        { prop: 'name', label: '姓名', width: '120' },
+        { prop: 'age', label: '年龄', width: '80' },
+        { prop: 'address', label: '地址', minWidth: '150' },
+      ],
+      border: true,
+    },
     'el-card': { shadow: 'hover' },
+    'el-list': {
+      data: [
+        { id: 1, content: '列表项1' },
+        { id: 2, content: '列表项2' },
+      ],
+      border: true,
+    },
+    'el-tag': { type: '', size: 'default', effect: 'light' },
     'el-row': { gutter: 20 },
     'el-col': { span: 12 },
     'el-container': {},

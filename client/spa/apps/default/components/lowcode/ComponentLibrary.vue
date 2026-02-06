@@ -49,6 +49,12 @@ import {
   Grid,
   Box,
   Menu,
+  Link,
+  Minus,
+  Picture,
+  User,
+  Bell,
+  Warning,
 } from '@element-plus/icons-vue';
 
 interface ComponentMeta {
@@ -68,6 +74,13 @@ const categories = [
     components: [
       { type: 'el-button', name: '按钮', icon: Document, category: 'basic' },
       { type: 'el-text', name: '文本', icon: Edit, category: 'basic' },
+      { type: 'el-link', name: '链接', icon: Link, category: 'basic' },
+      { type: 'el-divider', name: '分割线', icon: Minus, category: 'basic' },
+      { type: 'el-space', name: '间距', icon: Grid, category: 'basic' },
+      { type: 'el-image', name: '图片', icon: Picture, category: 'basic' },
+      { type: 'el-avatar', name: '头像', icon: User, category: 'basic' },
+      { type: 'el-badge', name: '徽标', icon: Bell, category: 'basic' },
+      { type: 'el-alert', name: '警告提示', icon: Warning, category: 'basic' },
     ],
   },
   {
@@ -75,12 +88,18 @@ const categories = [
     label: '表单组件',
     icon: Edit,
     components: [
+      { type: 'el-form', name: '表单', icon: Edit, category: 'form' },
+      { type: 'el-form-item', name: '表单项', icon: Edit, category: 'form' },
       { type: 'el-input', name: '输入框', icon: Edit, category: 'form' },
+      { type: 'el-textarea', name: '文本域', icon: Edit, category: 'form' },
+      { type: 'el-input-number', name: '数字输入框', icon: Edit, category: 'form' },
       { type: 'el-select', name: '选择器', icon: Search, category: 'form' },
       { type: 'el-date-picker', name: '日期选择', icon: Calendar, category: 'form' },
       { type: 'el-checkbox', name: '复选框', icon: Check, category: 'form' },
       { type: 'el-radio', name: '单选框', icon: CircleCheck, category: 'form' },
       { type: 'el-switch', name: '开关', icon: Switch, category: 'form' },
+      { type: 'el-slider', name: '滑块', icon: Switch, category: 'form' },
+      { type: 'el-rate', name: '评分', icon: Switch, category: 'form' },
     ],
   },
   {

@@ -49,7 +49,10 @@
 - [x] 3.3 封装Element Plus组件元数据
   - [x] 组件类型定义
   - [x] 组件默认属性配置
-  - [ ] 组件属性Schema定义（部分实现）
+  - [x] 组件属性Schema定义（基础组件、表单组件、数据展示组件、布局组件）
+  - [x] 基础组件Schema完善（el-button、el-text、el-link、el-divider、el-space、el-image、el-avatar、el-badge、el-alert）
+  - [x] 数据展示组件Schema完善（el-table、el-card、el-list、el-tag）
+  - [x] 表单组件Schema完善（el-input、el-textarea、el-input-number、el-select、el-date-picker、el-checkbox、el-radio、el-switch、el-slider、el-rate、el-form、el-form-item）
 
 ## 4. 画布编辑模块
 
@@ -149,13 +152,22 @@
 
 ## 9. 布局容器组件
 
-- [ ] 9.1 实现栅格布局（Row/Col）
-  - [ ] 响应式栅格系统
-  - [ ] 栅格属性配置
+- [x] 9.1 实现栅格布局（Row/Col）
+  - [x] 响应式栅格系统
+  - [x] 栅格属性配置
+  - [x] 支持嵌套子组件
+  - [x] 支持组件插入到布局组件内部
 
-- [ ] 9.2 实现弹性布局（Container）
-  - [ ] 容器布局配置
-  - [ ] 内边距、外边距配置
+- [x] 9.2 实现弹性布局（Container）
+  - [x] 容器布局配置
+  - [x] 支持嵌套子组件
+  - [x] 支持组件插入到布局组件内部
+
+- [x] 9.3 布局组件嵌套功能
+  - [x] 完善布局组件Schema定义（canNest标记）
+  - [x] 实现嵌套拖拽功能（vue-draggable-plus）
+  - [x] 支持组件插入到布局组件内部
+  - [x] 嵌套组件排序和移动
 
 ## 10. 项目管理和模板管理（本地存储）
 
