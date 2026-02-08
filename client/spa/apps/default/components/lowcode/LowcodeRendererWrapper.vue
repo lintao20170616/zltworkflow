@@ -64,17 +64,6 @@ const handleDragUpdate = () => {
 </script>
 
 <style scoped>
-.lowcode-renderer-wrapper {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-.lowcode-renderer-wrapper > * {
-  margin: 0;
-  padding: 0;
-}
-
 .ghost {
   opacity: 0.5;
   background: #f0f9ff;

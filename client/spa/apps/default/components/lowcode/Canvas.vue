@@ -39,7 +39,7 @@ const handleDrop = (event: DragEvent) => {
         props: defaultProps,
         children: [],
         text: getDefaultText(componentMeta.type),
-        style: {},
+        style: getDefaultStyle(componentMeta.type),
       };
       store.addComponent(newComponent);
       store.selectComponent(newComponent.id);
@@ -83,7 +83,6 @@ function getDefaultProps(type: string): Record<string, any> {
     'el-form': { labelWidth: '100px', labelPosition: 'right' },
     'el-form-item': { label: '表单项', prop: '' },
     'el-input': { placeholder: '请输入内容' },
-    'el-textarea': { placeholder: '请输入内容', rows: 3 },
     'el-input-number': { placeholder: '请输入数字', step: 1 },
     'el-select': {
       placeholder: '请选择',
@@ -132,8 +131,45 @@ function getDefaultText(type: string): string | undefined {
     'el-button': '按钮',
     'el-text': '文本',
     'el-tag': '标签',
+    'el-link': '链接',
+    'el-divider': '分割线',
+    'el-alert': '这是一条警告提示',
+    'el-avatar': 'A',
   };
   return textMap[type];
+}
+
+function getDefaultStyle(type: string): Record<string, string> {
+  const defaultStyleMap: Record<string, Record<string, string>> = {
+    'el-button': { display: 'inline-block' },
+    'el-text': { display: 'inline-block' },
+    'el-link': { display: 'inline-block' },
+    'el-divider': { width: '100%', display: 'block' },
+    'el-space': { width: '100%' },
+    'el-image': { width: '300px', height: '200px', display: 'inline-block' },
+    'el-avatar': { display: 'inline-block' },
+    'el-badge': { display: 'inline-block' },
+    'el-alert': { width: '100%' },
+    'el-form': { width: '100%' },
+    'el-form-item': { width: '100%' },
+    'el-input': { width: '200px', display: 'inline-block' },
+    'el-input-number': { width: '200px', display: 'inline-block' },
+    'el-select': { width: '200px', display: 'inline-block' },
+    'el-date-picker': { width: '200px', display: 'inline-block' },
+    'el-checkbox': { display: 'inline-block' },
+    'el-radio': { display: 'inline-block' },
+    'el-switch': { display: 'inline-block' },
+    'el-slider': { width: '300px', display: 'inline-block' },
+    'el-rate': { display: 'inline-block' },
+    'el-table': { width: '100%' },
+    'el-card': { width: '100%' },
+    'el-list': { width: '100%' },
+    'el-tag': { display: 'inline-block' },
+    'el-row': { width: '100%' },
+    'el-col': { width: '100%' },
+    'el-container': { width: '100%', minHeight: '200px' },
+  };
+  return defaultStyleMap[type] || { display: 'inline-block' };
 }
 </script>
 

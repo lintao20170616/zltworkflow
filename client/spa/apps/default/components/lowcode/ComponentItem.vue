@@ -28,6 +28,9 @@
         <template v-else-if="component.type === 'el-select' && component.props.options">
           <el-option v-for="option in component.props.options" :key="option.value" :label="option.label" :value="option.value" />
         </template>
+        <template v-else-if="component.type === 'el-divider'">
+          <template v-if="component.text">{{ component.text }}</template>
+        </template>
         <template v-else-if="hasTextContent(component.type) && component.text !== undefined">
           {{ component.text }}
         </template>
@@ -40,26 +43,28 @@
             @dragover.prevent
             @dragenter.prevent
           >
-            <vue-draggable
-              v-model="children"
-              :animation="200"
-              handle=".drag-handle"
-              ghost-class="ghost"
-              chosen-class="chosen"
-              drag-class="drag"
-              group="components"
-              @start="handleDragStart"
-              @end="handleDragEnd"
-            >
-              <component-item
-                v-for="child in component.children"
-                :key="child.id"
-                :component="child"
-                :selected="selectedComponentId === child.id"
-                @select="$emit('select', $event)"
-                @delete="$emit('delete', $event)"
-              />
-            </vue-draggable>
+            <div class="tree-children">
+              <vue-draggable
+                v-model="children"
+                :animation="200"
+                handle=".drag-handle"
+                ghost-class="ghost"
+                chosen-class="chosen"
+                drag-class="drag"
+                group="components"
+                @start="handleDragStart"
+                @end="handleDragEnd"
+              >
+                <div v-for="child in component.children" :key="child.id" class="tree-node">
+                  <component-item
+                    :component="child"
+                    :selected="selectedComponentId === child.id"
+                    @select="$emit('select', $event)"
+                    @delete="$emit('delete', $event)"
+                  />
+                </div>
+              </vue-draggable>
+            </div>
           </div>
         </template>
         <template v-else-if="canNest && (!component.children || component.children.length === 0)">
@@ -95,7 +100,7 @@ const selectedComponentId = computed(() => store.selectedComponentId);
 const canNest = computed(() => canComponentNest(props.component.type));
 
 const isLayoutComponent = computed(() => {
-  const layoutTypes = ['el-row', 'el-col', 'el-container', 'el-card', 'el-table', 'el-form', 'el-form-item', 'el-space', 'el-badge'];
+  const layoutTypes = ['el-row', 'el-col', 'el-container', 'el-card', 'el-table', 'el-form', 'el-form-item', 'el-space', 'el-badge', 'el-divider'];
   return layoutTypes.includes(props.component.type);
 });
 
@@ -110,7 +115,7 @@ const children = computed({
   },
 });
 
-const textContentComponents = ['el-button', 'el-text', 'el-tag', 'el-link', 'el-alert', 'el-avatar', 'el-divider'];
+const textContentComponents = ['el-button', 'el-text', 'el-tag', 'el-link', 'el-alert', 'el-avatar'];
 
 function hasTextContent(type: string): boolean {
   return textContentComponents.includes(type);
@@ -130,7 +135,7 @@ function handleDrop(event: DragEvent) {
         props: defaultProps,
         children: [],
         text: getDefaultText(componentMeta.type),
-        style: {},
+        style: getDefaultStyle(componentMeta.type),
       };
       store.addComponent(newComponent, props.component.id);
       store.selectComponent(newComponent.id);
@@ -162,7 +167,6 @@ function getDefaultProps(type: string): Record<string, any> {
     'el-form': { labelWidth: '100px', labelPosition: 'right' },
     'el-form-item': { label: '表单项', prop: '' },
     'el-input': { placeholder: '请输入内容' },
-    'el-textarea': { placeholder: '请输入内容', rows: 3 },
     'el-input-number': { placeholder: '请输入数字', step: 1 },
     'el-select': {
       placeholder: '请选择',
@@ -211,8 +215,47 @@ function getDefaultText(type: string): string | undefined {
     'el-button': '按钮',
     'el-text': '文本',
     'el-tag': '标签',
+    'el-link': '链接',
+    'el-alert': '这是一条警告提示',
+    'el-avatar': 'A',
   };
+  if (type === 'el-divider') {
+    return undefined;
+  }
   return textMap[type];
+}
+
+function getDefaultStyle(type: string): Record<string, string> {
+  const defaultStyleMap: Record<string, Record<string, string>> = {
+    'el-button': { display: 'inline-block' },
+    'el-text': { display: 'inline-block' },
+    'el-link': { display: 'inline-block' },
+    'el-divider': { width: '100%', display: 'block' },
+    'el-space': { width: '100%' },
+    'el-image': { width: '300px', height: '200px', display: 'inline-block' },
+    'el-avatar': { display: 'inline-block' },
+    'el-badge': { display: 'inline-block' },
+    'el-alert': { width: '100%' },
+    'el-form': { width: '100%' },
+    'el-form-item': { width: '100%' },
+    'el-input': { width: '200px', display: 'inline-block' },
+    'el-input-number': { width: '200px', display: 'inline-block' },
+    'el-select': { width: '200px', display: 'inline-block' },
+    'el-date-picker': { width: '200px', display: 'inline-block' },
+    'el-checkbox': { display: 'inline-block' },
+    'el-radio': { display: 'inline-block' },
+    'el-switch': { display: 'inline-block' },
+    'el-slider': { width: '300px', display: 'inline-block' },
+    'el-rate': { display: 'inline-block' },
+    'el-table': { width: '100%' },
+    'el-card': { width: '100%' },
+    'el-list': { width: '100%' },
+    'el-tag': { display: 'inline-block' },
+    'el-row': { width: '100%' },
+    'el-col': { width: '100%' },
+    'el-container': { width: '100%', minHeight: '200px' },
+  };
+  return defaultStyleMap[type] || { display: 'inline-block' };
 }
 </script>
 
@@ -223,14 +266,19 @@ function getDefaultText(type: string): string | undefined {
   vertical-align: top;
 }
 
+.nest-container-row .tree-children .component-item {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 .component-item:hover:not(.selected) {
   outline: 1px dashed #409eff;
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
 .component-item.selected {
-  outline: 2px solid #409eff;
-  outline-offset: 2px;
+  outline: 1px solid #409eff;
+  outline-offset: -1px;
 }
 
 .component-wrapper {
@@ -242,12 +290,13 @@ function getDefaultText(type: string): string | undefined {
 .component-item.can-nest .component-wrapper {
   pointer-events: auto;
   display: block;
-  width: 100%;
 }
 
 .component-item.can-nest .nest-container .component-item {
   margin: 0;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 .component-item.can-nest .nest-container-row .component-item {
@@ -256,62 +305,42 @@ function getDefaultText(type: string): string | undefined {
   flex-shrink: 0;
   padding-left: calc(var(--el-row-gutter, 0) / 2);
   padding-right: calc(var(--el-row-gutter, 0) / 2);
-  box-sizing: border-box;
 }
 
-.component-item.can-nest .nest-container-row .component-item .component-wrapper {
-  width: auto;
-  min-width: 100px;
-}
-
-.component-item.can-nest .nest-container-row .component-item .component-wrapper > [class*='el-select'],
-.component-item.can-nest .nest-container-row .component-item .component-wrapper > [class*='el-input'],
-.component-item.can-nest .nest-container-row .component-item .component-wrapper > [class*='el-date-picker'] {
-  width: 200px;
-  min-width: 150px;
-}
-
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper {
-  width: auto;
-  min-width: 200px;
-}
-
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-select'],
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-input'],
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-date-picker'],
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-textarea'],
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-input-number'] {
-  width: auto;
-  min-width: 200px;
-}
-
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-input'] :deep(.el-input__wrapper),
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-select'] :deep(.el-select__wrapper),
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item .component-wrapper > [class*='el-date-picker'] :deep(.el-input__wrapper) {
-  width: auto;
-  min-width: 200px;
-}
-
-.component-item.can-nest .nest-container-row .component-item.is-layout {
-  width: 100%;
-  display: block;
-}
-
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item {
-  width: 100%;
+.nest-container-row .tree-node .component-item {
+  width: auto !important;
+  display: inline-block !important;
 }
 
 .component-item.can-nest .nest-container:not(.nest-container-row) .component-item:not(.is-layout) {
   width: auto;
   display: inline-block;
+  margin-left: 0;
 }
 
-.component-item.can-nest .nest-container .component-item .component-wrapper {
-  width: auto;
+.component-item.can-nest {
+  position: relative;
+  background: #f0f9ff;
+  border: 2px solid #b3d8ff;
+  border-radius: 6px;
+  padding: 8px;
+  margin: 4px 0;
+  transition: all 0.2s;
 }
 
-.component-item.can-nest .nest-container:not(.nest-container-row) .component-item.is-layout .component-wrapper {
-  width: 100%;
+.component-item.can-nest:hover {
+  background: #e1f3ff;
+  border-color: #66b1ff;
+}
+
+.component-item.can-nest.selected {
+  background: #d4edff;
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+}
+
+.component-item.can-nest .nest-container .tree-node .component-item {
+  position: relative;
 }
 
 .component-item.is-layout {
@@ -325,36 +354,99 @@ function getDefaultText(type: string): string | undefined {
 }
 
 .nest-container {
-  display: inline-block;
-  width: auto;
-  padding: 12px;
-  box-sizing: border-box;
-}
-
-.nest-container-full {
-  width: 100%;
-  display: block;
-  padding: 12px;
+  position: relative;
+  margin-top: 8px;
+  padding: 8px;
   box-sizing: border-box;
 }
 
 .nest-container-row {
   width: 100%;
-  padding: 12px;
-  box-sizing: border-box;
+  padding: 0;
+  margin-top: 0;
+}
+
+.tree-children {
+  position: relative;
+}
+
+.nest-container-row .tree-children {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.tree-node {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.tree-node:last-child {
+  margin-bottom: 0;
+}
+
+.nest-container-row .tree-node {
+  display: contents;
+  margin-bottom: 0;
+  margin-right: 0;
+}
+
+.component-item.can-nest .nest-container .tree-node .component-item {
+  background: #fff;
+  border: 2px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 6px;
+  margin: 0;
+  transition: all 0.2s;
+}
+
+.nest-container-row .tree-node .component-item {
+  display: inline-block;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.component-item.can-nest .nest-container .tree-node .component-item:hover {
+  border-color: #c0c4cc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.component-item.can-nest .nest-container .tree-node .component-item.selected {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+}
+
+.component-item.can-nest .nest-container .tree-node .component-item.can-nest {
+  background: #f0f9ff;
+  border-color: #b3d8ff;
+}
+
+.component-item.can-nest .nest-container .tree-node .component-item.can-nest:hover {
+  background: #e1f3ff;
+  border-color: #66b1ff;
+}
+
+.component-item.can-nest .nest-container .tree-node .component-item.can-nest.selected {
+  background: #d4edff;
+  border-color: #409eff;
 }
 
 .component-item.can-nest .component-wrapper > [class*='el-row'] {
   width: 100%;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-start;
 }
 
-.component-item.can-nest .nest-container-row {
-  margin-left: calc(var(--el-row-gutter, 0) / -2);
-  margin-right: calc(var(--el-row-gutter, 0) / -2);
+.component-item.can-nest[class*='el-row'] .component-wrapper > [class*='el-row'] {
+  display: flex !important;
+  flex-wrap: nowrap !important;
 }
 
 .nest-empty {
-  min-height: 60px;
+  min-height: 40px;
   width: 100%;
   padding: 16px;
   border: 2px dashed #dcdfe6;

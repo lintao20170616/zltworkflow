@@ -91,7 +91,6 @@ const categories = [
       { type: 'el-form', name: '表单', icon: Edit, category: 'form' },
       { type: 'el-form-item', name: '表单项', icon: Edit, category: 'form' },
       { type: 'el-input', name: '输入框', icon: Edit, category: 'form' },
-      { type: 'el-textarea', name: '文本域', icon: Edit, category: 'form' },
       { type: 'el-input-number', name: '数字输入框', icon: Edit, category: 'form' },
       { type: 'el-select', name: '选择器', icon: Search, category: 'form' },
       { type: 'el-date-picker', name: '日期选择', icon: Calendar, category: 'form' },

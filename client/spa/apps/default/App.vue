@@ -19,7 +19,7 @@ onMounted(async () => {
     await menuStore.fetchSystemMenuTree();
   }
   if (route.path === '/' && isLoggedIn) {
-    router.push('/layout');
+    router.push('/');
   } else if (route.path !== '/' && !isLoggedIn) {
     console.log('跳转到登录页面');
     router.push('/login');

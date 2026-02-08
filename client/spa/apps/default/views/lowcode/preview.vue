@@ -39,6 +39,7 @@ const loadConfig = () => {
       const configJson = sessionStorage.getItem(configKey);
       if (configJson) {
         const config = JSON.parse(configJson);
+        console.log('Preview received config:', config);
         renderConfig.value = config;
         sessionStorage.removeItem(configKey);
       }

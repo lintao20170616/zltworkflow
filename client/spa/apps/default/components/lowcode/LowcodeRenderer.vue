@@ -35,10 +35,13 @@
           :value="option.value"
         />
       </template>
-      <template v-else-if="hasTextContent(component.type) && component.text !== undefined">
+      <template v-else-if="component.type === 'el-divider'">
+        <template v-if="component.text">{{ component.text }}</template>
+      </template>
+      <template v-else-if="hasTextContent(component)">
         {{ component.text }}
       </template>
-      <template v-else-if="canNest(component.type) && component.children && component.children.length > 0">
+      <template v-else-if="hasChildren(component)">
         <template v-if="component.type === 'el-row' || component.type === 'el-col'">
           <component
             :is="child.type"
@@ -75,15 +78,18 @@
                 :value="option.value"
               />
             </template>
-            <template v-else-if="hasTextContent(child.type) && child.text !== undefined">
+            <template v-else-if="child.type === 'el-divider'">
+              <template v-if="child.text">{{ child.text }}</template>
+            </template>
+            <template v-else-if="hasTextContent(child)">
               {{ child.text }}
             </template>
-            <template v-else-if="canNest(child.type) && child.children && child.children.length > 0">
-              <lowcode-renderer :config="{ version: config.version, page: config.page, components: child.children }" />
+            <template v-else-if="hasChildren(child)">
+              <lowcode-renderer :config="{ version: config.version, page: config.page, components: child.children ?? [] }" />
             </template>
           </component>
         </template>
-        <lowcode-renderer v-else :config="{ version: config.version, page: config.page, components: component.children }" />
+        <lowcode-renderer v-else :config="{ version: config.version, page: config.page, components: component.children ?? [] }" />
       </template>
     </component>
   </div>
@@ -91,84 +97,49 @@
 
 <script setup lang="ts">
 import type { PageConfig, ComponentConfig } from '@app/store/lowcode';
-import { getComponentSchema, canComponentNest, getChildComponentName } from './componentSchemas';
 
 defineProps<{
   config: PageConfig;
 }>();
 
-const hasTextContentProperty = (type: string): boolean => {
-  const schema = getComponentSchema(type);
-  if (!schema) return false;
-  return schema.properties.some((prop) => prop.type === 'text');
+const getChildComponentName = (parentType: string, propKey: string): string => {
+  const childComponentMap: Record<string, Record<string, string>> = {
+    'el-table': {
+      columns: 'el-table-column',
+    },
+    'el-list': {
+      data: 'el-list-item',
+    },
+    'el-select': {
+      options: 'el-option',
+    },
+  };
+  return childComponentMap[parentType]?.[propKey] || '';
 };
 
-const hasTextContent = (type: string): boolean => {
-  return hasTextContentProperty(type);
+const hasTextContent = (component: ComponentConfig): boolean => {
+  return component.text !== undefined && component.text !== null && component.text !== '';
 };
 
-const canNest = (type: string): boolean => {
-  return canComponentNest(type);
+const hasChildren = (component: ComponentConfig): boolean => {
+  return Array.isArray(component.children) && component.children.length > 0;
 };
 
 const renderTableColumns = (component: ComponentConfig): boolean => {
-  const schema = getComponentSchema(component.type);
-  if (!schema || component.type !== 'el-table') return false;
-  const hasColumnsProp = schema.properties.some((prop) => prop.key === 'columns');
-  return hasColumnsProp && component.props.columns && Array.isArray(component.props.columns);
+  return component.type === 'el-table' && Array.isArray(component.props?.columns) && component.props.columns.length > 0;
 };
 
 const renderListItems = (component: ComponentConfig): boolean => {
-  const schema = getComponentSchema(component.type);
-  if (!schema || component.type !== 'el-list') return false;
-  const hasDataProp = schema.properties.some((prop) => prop.key === 'data');
-  return hasDataProp && component.props.data && Array.isArray(component.props.data);
+  return component.type === 'el-list' && Array.isArray(component.props?.data) && component.props.data.length > 0;
 };
 
 const renderSelectOptions = (component: ComponentConfig): boolean => {
-  const schema = getComponentSchema(component.type);
-  if (!schema || component.type !== 'el-select') return false;
-  const hasOptionsProp = schema.properties.some((prop) => prop.key === 'options');
-  return hasOptionsProp && component.props.options && Array.isArray(component.props.options);
+  return component.type === 'el-select' && Array.isArray(component.props?.options) && component.props.options.length > 0;
 };
 
 const getComponentStyle = (component: ComponentConfig): Record<string, string> => {
-  const style = { ...component.style };
-  if (component.type === 'el-row' && component.props.gutter !== undefined) {
-    style['--el-row-gutter'] = `${component.props.gutter}px`;
-  }
-  return style;
+  return component.style || {};
 };
 </script>
 
-<style scoped>
-.lowcode-renderer {
-  width: 100%;
-}
-
-.lowcode-renderer :deep(.el-row > *:not(.el-col)) {
-  padding-left: calc(var(--el-row-gutter, 0) / 2);
-  padding-right: calc(var(--el-row-gutter, 0) / 2);
-  box-sizing: border-box;
-}
-
-.lowcode-renderer :deep(.el-form-item__content) {
-  width: auto;
-}
-
-.lowcode-renderer :deep(.el-form-item__content > .el-input),
-.lowcode-renderer :deep(.el-form-item__content > .el-select),
-.lowcode-renderer :deep(.el-form-item__content > .el-date-picker),
-.lowcode-renderer :deep(.el-form-item__content > .el-textarea),
-.lowcode-renderer :deep(.el-form-item__content > .el-input-number) {
-  width: auto;
-  min-width: 200px;
-}
-
-.lowcode-renderer :deep(.el-input .el-input__wrapper),
-.lowcode-renderer :deep(.el-select .el-select__wrapper),
-.lowcode-renderer :deep(.el-date-picker .el-input__wrapper) {
-  width: auto;
-  min-width: 200px;
-}
-</style>
+<style scoped></style>
