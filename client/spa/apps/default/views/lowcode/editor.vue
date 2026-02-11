@@ -7,7 +7,6 @@
       <div class="header-right">
         <el-button :icon="ArrowLeft" @click="goBack">返回列表</el-button>
         <el-button :icon="DocumentChecked" :loading="saving" @click="saveProject">保存</el-button>
-        <el-button :icon="View" @click="openPreview">打开预览</el-button>
         <el-button :icon="Download" @click="exportConfig">导出JSON</el-button>
         <el-button :icon="RefreshLeft" :disabled="!canUndo" @click="undo">撤销</el-button>
         <el-button :icon="RefreshRight" :disabled="!canRedo" @click="redo">重做</el-button>
@@ -31,7 +30,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { View, Download, RefreshLeft, RefreshRight, DocumentChecked, ArrowLeft } from '@element-plus/icons-vue';
+import { Download, RefreshLeft, RefreshRight, DocumentChecked, ArrowLeft } from '@element-plus/icons-vue';
 import { useLowcodeStore } from '@app/store/lowcode';
 import ComponentLibrary from '@app/components/lowcode/ComponentLibrary.vue';
 import CanvasEditor from '@app/components/lowcode/Canvas.vue';
@@ -120,16 +119,6 @@ const exportConfig = () => {
 
 const goBack = () => {
   router.push('/lowcode/projects');
-};
-
-const openPreview = () => {
-  const config = store.exportConfig();
-  const configKey = `lowcode_preview_${Date.now()}`;
-  sessionStorage.setItem(configKey, JSON.stringify(config));
-  router.push({
-    path: '/lowcode-preview',
-    query: { configKey },
-  });
 };
 
 onMounted(() => {

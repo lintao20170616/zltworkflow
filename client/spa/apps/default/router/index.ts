@@ -74,12 +74,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/lowcode/editor.vue'),
       },
       {
-        path: 'lowcode-preview',
-        name: 'LowcodePreview',
-        component: () => import('../views/lowcode/preview.vue'),
-        meta: { requiresAuth: true },
-      },
-      {
         path: 'projects/:id',
         name: 'TranslationProjectDetail',
         component: () => import('../views/translation/projects/detail.vue'),
