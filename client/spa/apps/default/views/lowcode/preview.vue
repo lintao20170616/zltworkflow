@@ -11,7 +11,7 @@
       </div>
     </div>
     <div class="preview-content" :class="{ 'mobile-view': previewMode === 'mobile' }">
-      <lowcode-renderer :config="renderConfig" />
+      <lowcode-renderer :config="renderConfig" :on-submit="handleFormSubmit" />
     </div>
   </div>
 </template>
@@ -20,6 +20,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 import type { PageConfig } from '@app/store/lowcode';
 import LowcodeRenderer from '@app/components/lowcode/LowcodeRenderer.vue';
 
@@ -51,6 +52,11 @@ const loadConfig = () => {
 
 const goBack = () => {
   router.back();
+};
+
+const handleFormSubmit = (data: Record<string, any>) => {
+  ElMessage.success('表单提交成功');
+  console.log('Form data:', data);
 };
 
 onMounted(() => {

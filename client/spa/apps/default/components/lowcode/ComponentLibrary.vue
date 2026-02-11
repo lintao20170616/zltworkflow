@@ -34,28 +34,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import {
-  Document,
-  Edit,
-  Search,
-  Calendar,
-  Check,
-  CircleCheck,
-  Switch,
-  DataAnalysis,
-  CreditCard,
-  List,
-  PriceTag,
-  Grid,
-  Box,
-  Menu,
-  Link,
-  Minus,
-  Picture,
-  User,
-  Bell,
-  Warning,
-} from '@element-plus/icons-vue';
+import { Edit, Search, Calendar, Check, CircleCheck, Switch } from '@element-plus/icons-vue';
 
 interface ComponentMeta {
   type: string;
@@ -64,25 +43,9 @@ interface ComponentMeta {
   category: string;
 }
 
-const activeCategory = ref('basic');
+const activeCategory = ref('form');
 
 const categories = [
-  {
-    key: 'basic',
-    label: '基础组件',
-    icon: Menu,
-    components: [
-      { type: 'el-button', name: '按钮', icon: Document, category: 'basic' },
-      { type: 'el-text', name: '文本', icon: Edit, category: 'basic' },
-      { type: 'el-link', name: '链接', icon: Link, category: 'basic' },
-      { type: 'el-divider', name: '分割线', icon: Minus, category: 'basic' },
-      { type: 'el-space', name: '间距', icon: Grid, category: 'basic' },
-      { type: 'el-image', name: '图片', icon: Picture, category: 'basic' },
-      { type: 'el-avatar', name: '头像', icon: User, category: 'basic' },
-      { type: 'el-badge', name: '徽标', icon: Bell, category: 'basic' },
-      { type: 'el-alert', name: '警告提示', icon: Warning, category: 'basic' },
-    ],
-  },
   {
     key: 'form',
     label: '表单组件',
@@ -99,27 +62,7 @@ const categories = [
       { type: 'el-switch', name: '开关', icon: Switch, category: 'form' },
       { type: 'el-slider', name: '滑块', icon: Switch, category: 'form' },
       { type: 'el-rate', name: '评分', icon: Switch, category: 'form' },
-    ],
-  },
-  {
-    key: 'display',
-    label: '数据展示',
-    icon: DataAnalysis,
-    components: [
-      { type: 'el-table', name: '表格', icon: DataAnalysis, category: 'display' },
-      { type: 'el-card', name: '卡片', icon: CreditCard, category: 'display' },
-      { type: 'el-list', name: '列表', icon: List, category: 'display' },
-      { type: 'el-tag', name: '标签', icon: PriceTag, category: 'display' },
-    ],
-  },
-  {
-    key: 'layout',
-    label: '布局组件',
-    icon: Grid,
-    components: [
-      { type: 'el-row', name: '栅格行', icon: Grid, category: 'layout' },
-      { type: 'el-col', name: '栅格列', icon: Grid, category: 'layout' },
-      { type: 'el-container', name: '容器', icon: Box, category: 'layout' },
+      { type: 'el-button', name: '按钮', icon: Edit, category: 'form' },
     ],
   },
 ];
