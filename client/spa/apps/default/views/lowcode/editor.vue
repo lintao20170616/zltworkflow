@@ -8,6 +8,9 @@
         <el-button :icon="ArrowLeft" @click="goBack">返回列表</el-button>
         <el-button :icon="DocumentChecked" :loading="saving" @click="saveProject">保存</el-button>
         <el-button :icon="Download" @click="exportConfig">导出JSON</el-button>
+        <el-button :type="previewMode ? 'primary' : 'default'" @click="togglePreview">
+          {{ previewMode ? '编辑' : '预览' }}
+        </el-button>
         <el-button :icon="RefreshLeft" :disabled="!canUndo" @click="undo">撤销</el-button>
         <el-button :icon="RefreshRight" :disabled="!canRedo" @click="redo">重做</el-button>
       </div>
@@ -17,7 +20,7 @@
         <component-library />
       </div>
       <div class="editor-center">
-        <el-empty description="从左侧组件库拖拽组件到此处" :image-size="120" />
+        <canvas-area />
       </div>
       <div class="editor-right">
         <property-panel />
@@ -33,6 +36,7 @@ import { ElMessage } from 'element-plus';
 import { Download, RefreshLeft, RefreshRight, DocumentChecked, ArrowLeft } from '@element-plus/icons-vue';
 import { useLowcodeStore } from '@app/store/lowcode';
 import ComponentLibrary from '@app/components/lowcode/ComponentLibrary.vue';
+import CanvasArea from '@app/components/lowcode/CanvasArea.vue';
 import PropertyPanel from '@app/components/lowcode/PropertyPanel.vue';
 
 const STORAGE_KEY = 'lowcode_projects';
@@ -43,6 +47,8 @@ const store = useLowcodeStore();
 const saving = ref(false);
 const canUndo = computed(() => store.canUndo);
 const canRedo = computed(() => store.canRedo);
+const previewMode = computed(() => store.previewMode);
+const togglePreview = () => store.togglePreview();
 const projectId = computed(() => route.query.projectId as string | undefined);
 
 const undo = () => {

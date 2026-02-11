@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Edit, Search, Calendar, Check, CircleCheck, Switch } from '@element-plus/icons-vue';
+import { Edit, Search, Calendar, Check, CircleCheck, Switch, Grid } from '@element-plus/icons-vue';
 
 interface ComponentMeta {
   type: string;
@@ -64,6 +64,12 @@ const categories = [
       { type: 'el-rate', name: '评分', icon: Switch, category: 'form' },
       { type: 'el-button', name: '按钮', icon: Edit, category: 'form' },
     ],
+  },
+  {
+    key: 'layout',
+    label: '布局组件',
+    icon: Grid,
+    components: [{ type: 'el-row', name: '行', icon: Edit, category: 'layout' }],
   },
 ];
 

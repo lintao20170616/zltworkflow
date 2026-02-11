@@ -1,0 +1,65 @@
+export default [
+  {
+    type: 'el-form',
+    name: '表单',
+    category: 'form',
+    canNest: true,
+    properties: [
+      {
+        key: 'labelWidth',
+        label: '标签宽度',
+        type: 'input',
+        defaultValue: '100px',
+        placeholder: '100px',
+        group: '布局',
+      },
+      {
+        key: 'labelPosition',
+        label: '标签位置',
+        type: 'select',
+        defaultValue: 'right',
+        options: [
+          { label: '左侧', value: 'left' },
+          { label: '右侧', value: 'right' },
+          { label: '顶部', value: 'top' },
+        ],
+        group: '布局',
+      },
+      {
+        key: 'size',
+        label: '尺寸',
+        type: 'select',
+        defaultValue: 'default',
+        options: [
+          { label: '大', value: 'large' },
+          { label: '默认', value: 'default' },
+          { label: '小', value: 'small' },
+        ],
+        group: '样式',
+      },
+      {
+        key: 'inline',
+        label: '行内表单',
+        type: 'switch',
+        defaultValue: false,
+        group: '布局',
+      },
+      {
+        key: 'disabled',
+        label: '禁用表单',
+        type: 'switch',
+        defaultValue: false,
+        group: '状态',
+      },
+      {
+        key: 'style',
+        label: '自定义样式',
+        type: 'style',
+        defaultValue: {},
+        placeholder: '{}',
+        description: 'CSS样式对象',
+        group: '样式',
+      },
+    ],
+  },
+];

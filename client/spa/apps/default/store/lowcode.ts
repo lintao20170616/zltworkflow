@@ -1,4 +1,7 @@
 import { defineStore } from 'pinia';
+import { getComponentSchema } from '@app/components/lowcode/componentSchemas';
+
+export const CONTAINER_COMPONENTS = ['el-form', 'el-form-item', 'el-card', 'el-tabs', 'el-tab-pane', '__root__'];
 
 export interface ComponentConfig {
   id: string;
@@ -20,64 +23,188 @@ export interface PageConfig {
   components: ComponentConfig[];
 }
 
+type InsertPosition = 'append' | 'before' | 'after';
+
 interface EditorState {
-  components: ComponentConfig[];
+  rootComponent: ComponentConfig | null;
   selectedComponentId: string | null;
+  previewMode: boolean;
   history: PageConfig[];
   historyIndex: number;
   maxHistorySize: number;
 }
 
+function generateId(): string {
+  return `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function createComponentFromType(type: string): ComponentConfig {
+  const schema = getComponentSchema(type);
+  const props: Record<string, any> = {};
+  if (schema?.properties) {
+    for (const p of schema.properties) {
+      if (p.defaultValue !== undefined) {
+        props[p.key] = p.defaultValue;
+      }
+    }
+  }
+  return {
+    id: generateId(),
+    type,
+    props,
+  };
+}
+
+function findComponentInList(list: ComponentConfig[], id: string): ComponentConfig | null {
+  for (const c of list) {
+    if (c.id === id) return c;
+    if (c.children) {
+      const found = findComponentInList(c.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function findParentAndIndex(list: ComponentConfig[], id: string): { parent: ComponentConfig; index: number } | null {
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].id === id) return null;
+    if (list[i].children) {
+      const idx = list[i].children!.findIndex((c) => c.id === id);
+      if (idx >= 0) return { parent: list[i], index: idx };
+      const result = findParentAndIndex(list[i].children!, id);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
+function removeFromTree(list: ComponentConfig[], id: string): boolean {
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].id === id) {
+      list.splice(i, 1);
+      return true;
+    }
+    if (list[i].children && removeFromTree(list[i].children!, id)) return true;
+  }
+  return false;
+}
+
+function deepCloneComponent(c: ComponentConfig): ComponentConfig {
+  return {
+    ...c,
+    id: c.type === '__root__' ? c.id : generateId(),
+    props: { ...c.props },
+    children: c.children?.map(deepCloneComponent),
+    events: c.events ? { ...c.events } : undefined,
+    text: c.text,
+    style: c.style ? { ...c.style } : undefined,
+    class: c.class,
+  };
+}
+
+function flattenComponents(list: ComponentConfig[], result: ComponentConfig[] = []): ComponentConfig[] {
+  for (const c of list) {
+    if (c.type !== '__root__') result.push(c);
+    if (c.children) flattenComponents(c.children, result);
+  }
+  return result;
+}
+
+function ensureRoot(store: { rootComponent: ComponentConfig | null }): ComponentConfig {
+  if (!store.rootComponent || store.rootComponent.type !== '__root__') {
+    return {
+      id: 'root',
+      type: '__root__',
+      props: {},
+      children: [],
+    };
+  }
+  return store.rootComponent;
+}
+
 export const useLowcodeStore = defineStore('lowcode', {
   state: (): EditorState => ({
-    components: [],
+    rootComponent: null,
     selectedComponentId: null,
+    previewMode: false,
     history: [],
     historyIndex: -1,
     maxHistorySize: 50,
   }),
 
   getters: {
+    rootChildren: (state): ComponentConfig[] => {
+      if (!state.rootComponent || state.rootComponent.type !== '__root__') return [];
+      return state.rootComponent.children || [];
+    },
+
     selectedComponent: (state): ComponentConfig | null => {
-      if (!state.selectedComponentId) return null;
-      return findComponent(state.components, state.selectedComponentId);
+      if (!state.selectedComponentId || !state.rootComponent) return null;
+      return findComponentInList(state.rootComponent.children || [], state.selectedComponentId);
     },
 
-    canUndo: (state): boolean => {
-      return state.historyIndex > 0;
+    flatComponents: (state): ComponentConfig[] => {
+      if (!state.rootComponent) return [];
+      return flattenComponents(state.rootComponent.children || []);
     },
 
-    canRedo: (state): boolean => {
-      return state.historyIndex < state.history.length - 1;
-    },
+    canUndo: (state): boolean => state.historyIndex > 0,
+    canRedo: (state): boolean => state.historyIndex < state.history.length - 1,
   },
 
   actions: {
-    addComponent(component: ComponentConfig, parentId?: string) {
-      if (parentId) {
-        const parent = findComponent(this.components, parentId);
-        if (parent) {
-          if (!parent.children) {
-            parent.children = [];
+    getComponentById(id: string): ComponentConfig | null {
+      if (!this.rootComponent) return null;
+      return findComponentInList(this.rootComponent.children || [], id);
+    },
+
+    addComponent(componentOrType: ComponentConfig | string, opts?: { parentId?: string; position?: InsertPosition; siblingId?: string }) {
+      const component: ComponentConfig = typeof componentOrType === 'string' ? createComponentFromType(componentOrType) : componentOrType;
+
+      const root = ensureRoot(this);
+      if (!this.rootComponent) {
+        this.rootComponent = root;
+      }
+
+      const children = root.children || [];
+      if (!root.children) root.children = children;
+
+      if (opts?.parentId) {
+        const parent = findComponentInList(children, opts.parentId);
+        if (parent && CONTAINER_COMPONENTS.includes(parent.type)) {
+          const parentChildren = parent.children || [];
+          if (!parent.children) parent.children = parentChildren;
+
+          if (opts.position === 'before' || opts.position === 'after') {
+            const siblingIdx = opts.siblingId ? parentChildren.findIndex((c) => c.id === opts!.siblingId) : -1;
+            const insertIdx = siblingIdx >= 0 ? (opts.position === 'before' ? siblingIdx : siblingIdx + 1) : 0;
+            parentChildren.splice(insertIdx, 0, component);
+          } else {
+            parentChildren.push(component);
           }
-          parent.children.push(component);
+        } else {
+          children.push(component);
         }
+      } else if (opts?.position === 'before' || opts?.position === 'after') {
+        const siblingIdx = opts.siblingId ? children.findIndex((c) => c.id === opts!.siblingId) : -1;
+        const insertIdx = siblingIdx >= 0 ? (opts.position === 'before' ? siblingIdx : siblingIdx + 1) : children.length;
+        children.splice(insertIdx, 0, component);
       } else {
-        this.components.push(component);
+        children.push(component);
       }
       this.saveHistory();
     },
 
     removeComponent(componentId: string) {
-      removeComponentFromTree(this.components, componentId);
-      if (this.selectedComponentId === componentId) {
-        this.selectedComponentId = null;
-      }
+      if (!this.rootComponent?.children) return;
+      removeFromTree(this.rootComponent.children, componentId);
+      if (this.selectedComponentId === componentId) this.selectedComponentId = null;
       this.saveHistory();
     },
 
     updateComponentProps(componentId: string, props: Record<string, any>) {
-      const component = findComponent(this.components, componentId);
+      const component = this.getComponentById(componentId);
       if (component) {
         Object.assign(component.props, props);
         this.saveHistory();
@@ -85,7 +212,7 @@ export const useLowcodeStore = defineStore('lowcode', {
     },
 
     updateComponentText(componentId: string, text: string) {
-      const component = findComponent(this.components, componentId);
+      const component = this.getComponentById(componentId);
       if (component) {
         component.text = text;
         this.saveHistory();
@@ -93,11 +220,9 @@ export const useLowcodeStore = defineStore('lowcode', {
     },
 
     updateComponentStyle(componentId: string, style: Record<string, string>) {
-      const component = findComponent(this.components, componentId);
+      const component = this.getComponentById(componentId);
       if (component) {
-        if (!component.style) {
-          component.style = {};
-        }
+        if (!component.style) component.style = {};
         Object.assign(component.style, style);
         this.saveHistory();
       }
@@ -108,80 +233,104 @@ export const useLowcodeStore = defineStore('lowcode', {
     },
 
     moveComponent(componentId: string, targetIndex: number, parentId?: string) {
-      const component = findComponent(this.components, componentId);
-      if (!component) return;
-
-      removeComponentFromTree(this.components, componentId);
+      const component = this.getComponentById(componentId);
+      if (!component || !this.rootComponent?.children) return;
+      removeFromTree(this.rootComponent.children, componentId);
 
       if (parentId) {
-        const parent = findComponent(this.components, parentId);
-        if (parent) {
-          if (!parent.children) {
-            parent.children = [];
-          }
-          parent.children.splice(targetIndex, 0, component);
+        const parent = findComponentInList(this.rootComponent.children, parentId);
+        if (parent && CONTAINER_COMPONENTS.includes(parent.type)) {
+          const list = parent.children || [];
+          if (!parent.children) parent.children = list;
+          list.splice(Math.min(targetIndex, list.length), 0, component);
+        } else {
+          this.rootComponent.children.splice(targetIndex, 0, component);
         }
       } else {
-        this.components.splice(targetIndex, 0, component);
+        this.rootComponent.children.splice(targetIndex, 0, component);
       }
       this.saveHistory();
     },
 
     duplicateComponent(componentId: string) {
-      const component = findComponent(this.components, componentId);
+      const component = this.getComponentById(componentId);
       if (!component) return;
-
       const duplicated = deepCloneComponent(component);
-      this.addComponent(duplicated);
+      if (!this.rootComponent?.children) return;
+
+      const parentInfo = findParentAndIndex(this.rootComponent.children, componentId);
+      if (parentInfo) {
+        const { parent, index } = parentInfo;
+        const list = parent.children || [];
+        if (!parent.children) parent.children = list;
+        list.splice(index + 1, 0, duplicated);
+      } else {
+        const idx = this.rootComponent.children.findIndex((c) => c.id === componentId);
+        if (idx >= 0) {
+          this.rootComponent.children.splice(idx + 1, 0, duplicated);
+        } else {
+          this.rootComponent.children.push(duplicated);
+        }
+      }
+      this.saveHistory();
+    },
+
+    togglePreview() {
+      this.previewMode = !this.previewMode;
     },
 
     saveHistory() {
-      const currentState: PageConfig = {
+      const config: PageConfig = {
         version: '1.0.0',
-        page: {
-          title: '页面标题',
-          layout: 'container',
-        },
-        components: deepCloneComponents(this.components),
+        page: { title: '页面标题', layout: 'container' },
+        components: (this.rootComponent?.children || []).map(deepCloneComponent),
       };
-
       this.history = this.history.slice(0, this.historyIndex + 1);
-      this.history.push(currentState);
-
-      if (this.history.length > this.maxHistorySize) {
-        this.history.shift();
-      } else {
-        this.historyIndex++;
-      }
+      this.history.push(config);
+      if (this.history.length > this.maxHistorySize) this.history.shift();
+      else this.historyIndex++;
     },
 
     undo() {
-      if (this.canUndo) {
-        this.historyIndex--;
-        const previousState = this.history[this.historyIndex];
-        this.components = deepCloneComponents(previousState.components);
-        this.selectedComponentId = null;
-      }
+      if (!this.canUndo) return;
+      this.historyIndex--;
+      const prev = this.history[this.historyIndex];
+      this.rootComponent = {
+        id: 'root',
+        type: '__root__',
+        props: {},
+        children: prev.components.map(deepCloneComponent),
+      };
+      this.selectedComponentId = null;
     },
 
     redo() {
-      if (this.canRedo) {
-        this.historyIndex++;
-        const nextState = this.history[this.historyIndex];
-        this.components = deepCloneComponents(nextState.components);
-        this.selectedComponentId = null;
-      }
+      if (!this.canRedo) return;
+      this.historyIndex++;
+      const next = this.history[this.historyIndex];
+      this.rootComponent = {
+        id: 'root',
+        type: '__root__',
+        props: {},
+        children: next.components.map(deepCloneComponent),
+      };
+      this.selectedComponentId = null;
     },
 
     clear() {
-      this.components = [];
+      this.rootComponent = null;
       this.selectedComponentId = null;
       this.history = [];
       this.historyIndex = -1;
     },
 
     loadConfig(config: PageConfig) {
-      this.components = deepCloneComponents(config.components);
+      this.rootComponent = {
+        id: 'root',
+        type: '__root__',
+        props: {},
+        children: config.components.map(deepCloneComponent),
+      };
       this.selectedComponentId = null;
       this.saveHistory();
     },
@@ -189,61 +338,9 @@ export const useLowcodeStore = defineStore('lowcode', {
     exportConfig(): PageConfig {
       return {
         version: '1.0.0',
-        page: {
-          title: '页面标题',
-          layout: 'container',
-        },
-        components: deepCloneComponents(this.components),
+        page: { title: '页面标题', layout: 'container' },
+        components: (this.rootComponent?.children || []).map(deepCloneComponent),
       };
     },
   },
 });
-
-function findComponent(components: ComponentConfig[], id: string): ComponentConfig | null {
-  for (const component of components) {
-    if (component.id === id) {
-      return component;
-    }
-    if (component.children) {
-      const found = findComponent(component.children, id);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-function removeComponentFromTree(components: ComponentConfig[], id: string): boolean {
-  for (let i = 0; i < components.length; i++) {
-    if (components[i].id === id) {
-      components.splice(i, 1);
-      return true;
-    }
-    if (components[i].children) {
-      if (removeComponentFromTree(components[i].children!, id)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-function deepCloneComponent(component: ComponentConfig): ComponentConfig {
-  return {
-    ...component,
-    id: generateId(),
-    props: { ...component.props },
-    children: component.children ? component.children.map(deepCloneComponent) : undefined,
-    events: component.events ? { ...component.events } : undefined,
-    text: component.text,
-    style: component.style ? { ...component.style } : undefined,
-    class: component.class,
-  };
-}
-
-function deepCloneComponents(components: ComponentConfig[]): ComponentConfig[] {
-  return components.map(deepCloneComponent);
-}
-
-function generateId(): string {
-  return `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
