@@ -26,6 +26,7 @@
               @change="handlePropertyChange(property)"
               @input="handlePropertyChange(property)"
               @blur="handleBlur(property)"
+              @keyup.enter="handlePropertyChange(property)"
             >
               <template v-if="property.type === 'select' && property.options">
                 <el-option v-for="option in property.options" :key="option.value" :label="option.label" :value="option.value" />

@@ -79,7 +79,7 @@ export const useLowcodeStore = defineStore('lowcode', {
     updateComponentProps(componentId: string, props: Record<string, any>) {
       const component = findComponent(this.components, componentId);
       if (component) {
-        component.props = { ...component.props, ...props };
+        Object.assign(component.props, props);
         this.saveHistory();
       }
     },
@@ -95,7 +95,10 @@ export const useLowcodeStore = defineStore('lowcode', {
     updateComponentStyle(componentId: string, style: Record<string, string>) {
       const component = findComponent(this.components, componentId);
       if (component) {
-        component.style = { ...component.style, ...style };
+        if (!component.style) {
+          component.style = {};
+        }
+        Object.assign(component.style, style);
         this.saveHistory();
       }
     },
