@@ -17,7 +17,7 @@
         <component-library />
       </div>
       <div class="editor-center">
-        <canvas-editor />
+        <el-empty description="从左侧组件库拖拽组件到此处" :image-size="120" />
       </div>
       <div class="editor-right">
         <property-panel />
@@ -33,7 +33,6 @@ import { ElMessage } from 'element-plus';
 import { Download, RefreshLeft, RefreshRight, DocumentChecked, ArrowLeft } from '@element-plus/icons-vue';
 import { useLowcodeStore } from '@app/store/lowcode';
 import ComponentLibrary from '@app/components/lowcode/ComponentLibrary.vue';
-import CanvasEditor from '@app/components/lowcode/Canvas.vue';
 import PropertyPanel from '@app/components/lowcode/PropertyPanel.vue';
 
 const STORAGE_KEY = 'lowcode_projects';
