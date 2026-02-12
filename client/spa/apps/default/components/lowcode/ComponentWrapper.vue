@@ -3,6 +3,7 @@
     class="component-wrapper"
     :class="{ selected: isSelected, 'is-container': !previewMode && isContainer }"
     :data-component-id="config.id"
+    :style="wrapperStyle"
     @click.stop="handleSelect"
     @mouseenter="isHover = true"
     @mouseleave="isHover = false"
@@ -16,19 +17,17 @@
     </div>
     <component :is="config.type" v-bind="componentProps" :style="config.style" :class="config.class" class="lowcode-component">
       <template v-if="config.type === 'el-button'">
-        {{ config.text ?? '按钮' }}
+        {{ config.props?.label ?? '按钮' }}
       </template>
-      <template v-else-if="config.type === 'el-select' && selectOptions.length">
+      <template v-if="config.type === 'el-select' && selectOptions.length">
         <el-option v-for="opt in selectOptions" :key="String(opt.value)" :label="opt.label" :value="opt.value" />
       </template>
       <template v-else-if="isContainer && config.children?.length">
-        <component-wrapper v-for="child in config.children" :key="child.id" :config="child" :preview-mode="previewMode" />
+        <component-wrapper v-for="child in config.children" :key="child.id" :config="child" :preview-mode="previewMode" :parent-config="config" />
       </template>
-      <template v-else-if="isContainer && (!config.children || config.children.length === 0)">
-        <div class="empty-container">
-          <span class="empty-hint">拖拽组件到此处</span>
-        </div>
-      </template>
+      <div v-if="!previewMode && isContainer && !config.children?.length" class="empty-container">
+        <span class="empty-hint">拖拽组件到此处</span>
+      </div>
     </component>
   </div>
 </template>
@@ -44,10 +43,10 @@ const props = withDefaults(
   defineProps<{
     config: ComponentConfig;
     previewMode?: boolean;
+    parentConfig?: ComponentConfig;
   }>(),
   { previewMode: false },
 );
-
 const emit = defineEmits<{
   select: [id: string];
   duplicate: [id: string];
@@ -71,6 +70,20 @@ const componentProps = computed(() => {
     return rest;
   }
   return p;
+});
+
+const wrapperStyle = computed(() => {
+  if (props.parentConfig?.type === 'el-row') {
+    const gutter = props.parentConfig.props?.gutter ?? 0;
+    if (gutter > 0) {
+      const gutterValue = gutter / 2;
+      return {
+        paddingLeft: `${gutterValue}px`,
+        paddingRight: `${gutterValue}px`,
+      };
+    }
+  }
+  return {};
 });
 
 const handleSelect = () => {
@@ -159,5 +172,11 @@ const handleDelete = () => {
 
 :deep(.el-form-item) {
   margin-bottom: 0;
+}
+
+:deep(.el-row) {
+  .component-wrapper {
+    box-sizing: border-box;
+  }
 }
 </style>

@@ -9,7 +9,7 @@ import elRow from './Schemas/el-row';
 export interface PropertySchema {
   key: string;
   label: string;
-  type: 'input' | 'textarea' | 'number' | 'select' | 'switch' | 'color' | 'json' | 'text' | 'style';
+  type: 'input' | 'textarea' | 'number' | 'select' | 'switch' | 'color' | 'json' | 'content' | 'style';
   defaultValue?: any;
   options?: Array<{ label: string; value: any }>;
   placeholder?: string;

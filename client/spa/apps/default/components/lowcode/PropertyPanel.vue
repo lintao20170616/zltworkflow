@@ -100,8 +100,8 @@ watch(
       const newJsonInputs: Record<string, string> = {};
 
       schemas.forEach((schema) => {
-        if (schema.type === 'text') {
-          newFormData[schema.key] = component.text ?? schema.defaultValue ?? '';
+        if (schema.type === 'content') {
+          newFormData[schema.key] = component.content ?? schema.defaultValue ?? '';
         } else if (schema.type === 'style') {
           newFormData[schema.key] = component.style ?? schema.defaultValue ?? {};
         } else if (component.props.hasOwnProperty(schema.key)) {
@@ -131,16 +131,16 @@ watch(
 
 const handlePropertyChange = (property: PropertySchema) => {
   if (!selectedComponent.value) return;
-
-  if (property.type === 'text') {
-    store.updateComponentText(selectedComponent.value.id, formData.value[property.key] || '');
+  console.log('property', property);
+  if (property.type === 'content') {
+    store.updateComponentContent(selectedComponent.value.id, formData.value[property.key] || '');
   } else if (property.type === 'style') {
     const style = formData.value[property.key] || {};
     store.updateComponentStyle(selectedComponent.value.id, style);
   } else {
     const props: Record<string, any> = {};
     propertySchemas.value.forEach((schema) => {
-      if (schema.type !== 'text' && schema.type !== 'style' && formData.value.hasOwnProperty(schema.key)) {
+      if (schema.type !== 'content' && schema.type !== 'style' && formData.value.hasOwnProperty(schema.key)) {
         props[schema.key] = formData.value[schema.key];
       }
     });
@@ -182,7 +182,6 @@ function getDefaultValue(type: string): any {
 const getComponentName = (type: string): string => {
   const componentMap: Record<string, string> = {
     input: 'el-input',
-    text: 'el-input',
     textarea: 'el-input',
     number: 'el-input-number',
     select: 'el-select',
@@ -190,6 +189,7 @@ const getComponentName = (type: string): string => {
     color: 'el-color-picker',
     json: 'el-input',
     style: 'el-input',
+    content: 'el-input',
   };
   return componentMap[type] || 'el-input';
 };
@@ -197,7 +197,7 @@ const getComponentName = (type: string): string => {
 const getComponentProps = (property: PropertySchema): Record<string, any> => {
   const props: Record<string, any> = {};
 
-  if (property.type === 'input' || property.type === 'text') {
+  if (property.type === 'input' || property.type === 'content') {
     props.placeholder = property.placeholder;
   } else if (property.type === 'textarea' || property.type === 'json') {
     props.type = 'textarea';

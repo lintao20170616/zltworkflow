@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { getComponentSchema } from '@app/components/lowcode/componentSchemas';
 
-export const CONTAINER_COMPONENTS = ['el-form', 'el-form-item', 'el-card', 'el-tabs', 'el-tab-pane', '__root__'];
+export const CONTAINER_COMPONENTS = ['el-form', 'el-form-item', 'el-card', 'el-tabs', 'el-tab-pane', 'el-row', '__root__'];
 
 export interface ComponentConfig {
   id: string;
@@ -9,7 +9,7 @@ export interface ComponentConfig {
   props: Record<string, any>;
   children?: ComponentConfig[];
   events?: Record<string, string>;
-  text?: string;
+  content?: string;
   style?: Record<string, string>;
   class?: string | string[];
 }
@@ -23,7 +23,7 @@ export interface PageConfig {
   components: ComponentConfig[];
 }
 
-type InsertPosition = 'append' | 'before' | 'after';
+type InsertPosition = 'append';
 
 interface EditorState {
   rootComponent: ComponentConfig | null;
@@ -97,7 +97,7 @@ function deepCloneComponent(c: ComponentConfig): ComponentConfig {
     props: { ...c.props },
     children: c.children?.map(deepCloneComponent),
     events: c.events ? { ...c.events } : undefined,
-    text: c.text,
+    content: c.content,
     style: c.style ? { ...c.style } : undefined,
     class: c.class,
   };
@@ -161,35 +161,21 @@ export const useLowcodeStore = defineStore('lowcode', {
 
     addComponent(componentOrType: ComponentConfig | string, opts?: { parentId?: string; position?: InsertPosition; siblingId?: string }) {
       const component: ComponentConfig = typeof componentOrType === 'string' ? createComponentFromType(componentOrType) : componentOrType;
-
       const root = ensureRoot(this);
       if (!this.rootComponent) {
         this.rootComponent = root;
       }
-
       const children = root.children || [];
       if (!root.children) root.children = children;
-
       if (opts?.parentId) {
         const parent = findComponentInList(children, opts.parentId);
         if (parent && CONTAINER_COMPONENTS.includes(parent.type)) {
           const parentChildren = parent.children || [];
           if (!parent.children) parent.children = parentChildren;
-
-          if (opts.position === 'before' || opts.position === 'after') {
-            const siblingIdx = opts.siblingId ? parentChildren.findIndex((c) => c.id === opts!.siblingId) : -1;
-            const insertIdx = siblingIdx >= 0 ? (opts.position === 'before' ? siblingIdx : siblingIdx + 1) : 0;
-            parentChildren.splice(insertIdx, 0, component);
-          } else {
-            parentChildren.push(component);
-          }
+          parentChildren.push(component);
         } else {
           children.push(component);
         }
-      } else if (opts?.position === 'before' || opts?.position === 'after') {
-        const siblingIdx = opts.siblingId ? children.findIndex((c) => c.id === opts!.siblingId) : -1;
-        const insertIdx = siblingIdx >= 0 ? (opts.position === 'before' ? siblingIdx : siblingIdx + 1) : children.length;
-        children.splice(insertIdx, 0, component);
       } else {
         children.push(component);
       }
@@ -211,10 +197,11 @@ export const useLowcodeStore = defineStore('lowcode', {
       }
     },
 
-    updateComponentText(componentId: string, text: string) {
+    updateComponentContent(componentId: string, content: string) {
+      console.log('updateComponentContent', componentId, content);
       const component = this.getComponentById(componentId);
       if (component) {
-        component.text = text;
+        component.content = content;
         this.saveHistory();
       }
     },
@@ -230,26 +217,6 @@ export const useLowcodeStore = defineStore('lowcode', {
 
     selectComponent(componentId: string | null) {
       this.selectedComponentId = componentId;
-    },
-
-    moveComponent(componentId: string, targetIndex: number, parentId?: string) {
-      const component = this.getComponentById(componentId);
-      if (!component || !this.rootComponent?.children) return;
-      removeFromTree(this.rootComponent.children, componentId);
-
-      if (parentId) {
-        const parent = findComponentInList(this.rootComponent.children, parentId);
-        if (parent && CONTAINER_COMPONENTS.includes(parent.type)) {
-          const list = parent.children || [];
-          if (!parent.children) parent.children = list;
-          list.splice(Math.min(targetIndex, list.length), 0, component);
-        } else {
-          this.rootComponent.children.splice(targetIndex, 0, component);
-        }
-      } else {
-        this.rootComponent.children.splice(targetIndex, 0, component);
-      }
-      this.saveHistory();
     },
 
     duplicateComponent(componentId: string) {

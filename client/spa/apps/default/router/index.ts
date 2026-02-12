@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
+import experimentRoutes from './experiment.ts';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -91,7 +92,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/translation/tasks/detail.vue'),
         meta: { requiresAuth: true },
       },
-
+      ...experimentRoutes,
       {
         path: `/:systemId/:pathMatch(.*)+`,
         name: 'Iframe',

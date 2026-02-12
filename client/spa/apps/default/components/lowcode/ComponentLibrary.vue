@@ -69,7 +69,7 @@ const categories = [
     key: 'layout',
     label: '布局组件',
     icon: Grid,
-    components: [{ type: 'el-row', name: '行', icon: Edit, category: 'layout' }],
+    components: [{ type: 'el-row', name: '栅格行', icon: Edit, category: 'layout' }],
   },
 ];
 

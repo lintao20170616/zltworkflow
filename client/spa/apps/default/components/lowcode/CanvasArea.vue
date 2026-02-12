@@ -43,162 +43,53 @@ function parseDragData(e: DragEvent): DragPayload | null {
   }
 }
 
-function getDropTarget(e: DragEvent): { parentId?: string; siblingId?: string; position: 'append' | 'before' | 'after' } | null {
+/**
+ * 获取拖拽目标信息
+ * @param e 拖拽事件
+ * @returns 目标父节点/兄弟节点及插入位置
+ */
+function getDropTarget(e: DragEvent): { parentId?: string; position: 'append' } | null {
   const pointX = e.clientX;
   const pointY = e.clientY;
 
+  // 获取鼠标当前位置下的元素
   const el = document.elementFromPoint(pointX, pointY);
   if (!el) return { position: 'append' };
 
+  // 判断落在空白/内容区
   const canvasContent = el.closest('.canvas-content');
   const canvasEmpty = el.closest('.canvas-empty');
 
+  // 落在空画布区域，直接追加
   if (canvasEmpty) {
     return { position: 'append' };
   }
 
+  // 未落在有效画布内容区，直接追加
   if (!canvasContent) {
     return { position: 'append' };
   }
 
-  const allWrappers = Array.from(document.querySelectorAll('[data-component-id]'));
+  //根据e.target 找到最近的含有data-component-id的父节点
+  const dropTargetWrapper = e.target instanceof Element ? e.target.closest('[data-component-id]') : null;
 
-  let bestContainer: { wrapper: Element; compId: string; area: number } | null = null;
-  let siblingWrapper: Element | null = null;
-  let siblingCompId: string | null = null;
-
-  for (const wrapper of allWrappers) {
-    const rect = wrapper.getBoundingClientRect();
-    if (pointX >= rect.left && pointX <= rect.right && pointY >= rect.top && pointY <= rect.bottom) {
-      const compId = wrapper.getAttribute('data-component-id');
-      if (!compId) continue;
-
-      const comp = store.getComponentById(compId);
-      if (!comp) continue;
-
-      const isContainer = CONTAINER_COMPONENTS.includes(comp.type);
-      const isInContainerArea = pointY > rect.top + rect.height * 0.2 && pointY < rect.bottom - rect.height * 0.2;
-
-      if (isContainer && isInContainerArea) {
-        const area = rect.width * rect.height;
-        if (!bestContainer || area > bestContainer.area) {
-          bestContainer = { wrapper, compId, area };
-        }
-      } else if (!siblingWrapper) {
-        siblingWrapper = wrapper;
-        siblingCompId = compId;
-      }
+  if (dropTargetWrapper) {
+    const compId = dropTargetWrapper.getAttribute('data-component-id');
+    if (!compId) return null;
+    const comp = store.getComponentById(compId);
+    if (!comp) return null;
+    if (CONTAINER_COMPONENTS.includes(comp.type)) {
+      return { parentId: compId, position: 'append' };
     }
-  }
-
-  if (bestContainer) {
-    return { parentId: bestContainer.compId, position: 'append' };
-  }
-
-  if (siblingWrapper && siblingCompId) {
-    const rect = siblingWrapper.getBoundingClientRect();
-    const midY = rect.top + rect.height / 2;
-
-    if (pointY < midY) {
-      return { siblingId: siblingCompId, position: 'before' };
-    }
-    return { siblingId: siblingCompId, position: 'after' };
   }
 
   return { position: 'append' };
-}
-
-function updateDropIndicator(e: DragEvent) {
-  const target = getDropTarget(e);
-  if (!target) {
-    dropIndicator.value = { show: false, position: 'append', style: {} };
-    return;
-  }
-
-  const canvasContent = document.querySelector('.canvas-content');
-  const canvasEmpty = document.querySelector('.canvas-empty');
-
-  if (target.position === 'append' && !target.parentId && !target.siblingId) {
-    if (canvasEmpty) {
-      const rect = canvasEmpty.getBoundingClientRect();
-      dropIndicator.value = {
-        show: true,
-        position: 'append',
-        style: {
-          position: 'fixed',
-          top: `${rect.top}px`,
-          left: `${rect.left}px`,
-          width: `${rect.width}px`,
-          height: `${rect.height}px`,
-        },
-      };
-    } else if (canvasContent) {
-      const rect = canvasContent.getBoundingClientRect();
-      dropIndicator.value = {
-        show: true,
-        position: 'append',
-        style: {
-          position: 'fixed',
-          top: `${rect.bottom - 4}px`,
-          left: `${rect.left}px`,
-          width: `${rect.width}px`,
-          height: '4px',
-        },
-      };
-    }
-    return;
-  }
-
-  if (target.siblingId) {
-    const wrapper = document.querySelector(`[data-component-id="${target.siblingId}"]`);
-    if (wrapper) {
-      const rect = wrapper.getBoundingClientRect();
-      const isBefore = target.position === 'before';
-      dropIndicator.value = {
-        show: true,
-        position: target.position,
-        style: {
-          position: 'fixed',
-          top: isBefore ? `${rect.top - 2}px` : `${rect.bottom - 2}px`,
-          left: `${rect.left}px`,
-          width: `${rect.width}px`,
-          height: '4px',
-        },
-        siblingId: target.siblingId,
-        parentId: target.parentId,
-      };
-    }
-  } else if (target.parentId) {
-    const wrapper = document.querySelector(`[data-component-id="${target.parentId}"]`);
-    if (wrapper) {
-      const inner =
-        wrapper.querySelector('.empty-container') ||
-        wrapper.querySelector('.el-form') ||
-        wrapper.querySelector('.el-card__body') ||
-        wrapper.querySelector('.el-tabs__content') ||
-        wrapper;
-      const rect = inner.getBoundingClientRect();
-      dropIndicator.value = {
-        show: true,
-        position: 'append',
-        style: {
-          position: 'fixed',
-          top: `${rect.bottom - 4}px`,
-          left: `${rect.left}px`,
-          width: `${rect.width}px`,
-          height: '4px',
-        },
-        parentId: target.parentId,
-      };
-    }
-  }
 }
 
 function handleDragOver(e: DragEvent) {
   e.preventDefault();
   e.dataTransfer!.dropEffect = 'copy';
   isDragOver.value = true;
-  updateDropIndicator(e);
 }
 
 function handleDragLeave(e: DragEvent) {
@@ -210,35 +101,40 @@ function handleDragLeave(e: DragEvent) {
   }
 }
 
+// 处理拖拽释放事件
 function handleDrop(e: DragEvent) {
-  e.preventDefault();
-  e.stopPropagation();
+  e.preventDefault(); // 阻止默认行为
+  e.stopPropagation(); // 阻止事件冒泡
 
+  // 解析拖拽携带的数据
   const payload = parseDragData(e);
+
+  // 若无有效组件类型则重置拖拽状态并退出
   if (!payload?.type) {
     isDragOver.value = false;
     dropIndicator.value = { show: false, position: 'append', style: {} };
     return;
   }
 
+  // 判断具体的落点目标
   const target = getDropTarget(e);
+
+  // 拖拽结束后统一隐藏拖拽指示器和拖拽状态
   isDragOver.value = false;
   dropIndicator.value = { show: false, position: 'append', style: {} };
 
+  // 没有目标则默认直接添加组件
   if (!target) {
     store.addComponent(payload.type);
     return;
   }
 
+  // 有父ID时添加到父容器末尾
   if (target.parentId) {
     store.addComponent(payload.type, { parentId: target.parentId, position: 'append' });
-  } else if (target.siblingId) {
-    store.addComponent(payload.type, {
-      parentId: undefined,
-      position: target.position,
-      siblingId: target.siblingId,
-    });
-  } else {
+  }
+  // 兜底逻辑，直接添加
+  else {
     store.addComponent(payload.type);
   }
 }

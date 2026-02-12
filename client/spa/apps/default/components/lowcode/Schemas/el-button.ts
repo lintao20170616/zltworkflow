@@ -5,9 +5,9 @@ export default [
     category: 'form',
     properties: [
       {
-        key: 'text',
+        key: 'content',
         label: '按钮文案',
-        type: 'text',
+        type: 'content',
         defaultValue: '按钮',
         placeholder: '请输入按钮文案',
         group: '内容',
