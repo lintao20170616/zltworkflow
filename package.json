@@ -16,6 +16,7 @@
     "prettier": "prettier **/*.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} *.{js,jsx,vue,flow,ts,tsx,css,less,scss,html,json,yml,yaml} --write --cache --no-error-on-unmatched-pattern",
     "lint-staged": "lint-staged -p false",
     "migrate": "node scripts/run-migration.js",
+    "backup:db": "node scripts/backup-database.js",
     "i18n:scan": "node scripts/i18n-scanner.js",
     "i18n:push": "node scripts/i18n-push.js",
     "i18n:pull": "node scripts/i18n-pull.js"
