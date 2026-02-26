@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev:server": "egg-bin dev --port 9090",
+    "dev:server": "egg-bin dev --port 9080",
     "dev:client": "vite",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "build:client": "vite build",
