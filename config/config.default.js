@@ -3,11 +3,22 @@ const path = require('path');
 module.exports = (appInfo) => {
   const config = {};
   config.keys = 'zltworkflow_1677811477866_8821'; // 使用固定密钥,父子系统cookie共享，session共享，解密的时候需要使用相同的密钥，不然sessionRedis取不到用户信息
+
+  // 静态文件服务配置
+  /**
+   * view 引擎
+   */
   config.view = {
     cache: true,
     defaultViewEngine: 'nunjucks',
-    root: path.join(appInfo.baseDir, 'app/public'),
+    root: [path.join(appInfo.baseDir, 'app/public')].join(','),
   };
+
+  /**
+   * 静态资源配置 - 使用 egg-static 默认配置
+   * 默认配置: prefix: '/public/', dir: 'app/public'
+   * 所以我们需要将资源放在 app/public/ 目录下
+   */
 
   config.security = {
     xframe: {
@@ -39,12 +50,18 @@ module.exports = (appInfo) => {
   config.oauth = {
     enable: true,
     whitelist: [
+      '/',
       '/api/user/login',
       '/api/user/register',
       '/api/user/logout',
       '/api/chatbot/test-ollama',
       '/api/translation/push-default-json',
       '/api/translation/pullTranslations',
+      '/healthCheck.html',
+      '/favicon.ico',
+      '/common_icon.png',
+      '/error.html',
+      '/assets/',
     ],
     userKey: 'user',
   };

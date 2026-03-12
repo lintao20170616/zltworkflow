@@ -22,7 +22,7 @@
       "@app/*": ["./client/spa/apps/default/*"]
     }
   },
-  "include": ["client/spa/**/*.ts", "client/spa/**/*.tsx", "client/spa/**/*.vue"],
+  "include": ["client/spa/**/*.ts", "client/spa/**/*.tsx", "client/spa/**/*.vue", "env.d.ts"],
   "exclude": ["app/**", "config/**", "lib/**", "node_modules/**"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

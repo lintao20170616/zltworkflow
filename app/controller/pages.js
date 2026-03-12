@@ -24,8 +24,8 @@ class PagesController extends Controller {
     // 设置 ctx.locals，只有这样模板引擎中的 locals 变量才会生效
     Object.assign(this.ctx.locals, pageData);
 
-    this.ctx.logger.info('[PagesController] render file:', pageData);
     const templatePath = htmlPath || 'index.html';
+    this.ctx.logger.info('[PagesController] render templatePath:', templatePath);
     await this.ctx.render(templatePath);
   }
 

@@ -69,6 +69,6 @@ module.exports = (app) => {
   router.post('/api/translation/push-default-json', controller.translation.pushDefaultJson);
 
   router.get('/error', controller.pages.errorPage);
-  // 通用匹配，渲染页面
+  // 通用匹配，渲染页面（静态资源由 Egg.js static 中间件自动处理）
   router.get('/**', controller.pages.index);
 };

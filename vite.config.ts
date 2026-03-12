@@ -2,13 +2,49 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { copyFileSync, existsSync, readdirSync, mkdirSync } from 'fs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
+// 复制静态文件的函数
+function copyPublicFiles() {
+  const sourceDir = resolve(__dirname, 'client/public');
+  const targetDir = resolve(__dirname, 'app/public');
+
+  if (!existsSync(sourceDir)) {
+    console.log('Source public directory not found:', sourceDir);
+    return;
+  }
+
+  if (!existsSync(targetDir)) {
+    mkdirSync(targetDir, { recursive: true });
+  }
+
+  const files = readdirSync(sourceDir);
+  files.forEach((file) => {
+    const sourcePath = resolve(sourceDir, file);
+    const targetPath = resolve(targetDir, file);
+    try {
+      copyFileSync(sourcePath, targetPath);
+      console.log(`Copied: ${file}`);
+    } catch (error) {
+      console.error(`Error copying ${file}:`, error);
+    }
+  });
+}
+
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    {
+      name: 'copy-public-files',
+      buildEnd() {
+        copyPublicFiles();
+      },
+    },
+  ],
   root: resolve(__dirname, 'client/spa/apps/default'),
-  base: '/',
+  base: '/public/',
   build: {
     outDir: resolve(__dirname, 'app/public'),
     emptyOutDir: false,
