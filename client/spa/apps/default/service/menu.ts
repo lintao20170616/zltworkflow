@@ -15,6 +15,46 @@ export interface MenuItem {
   updatedAt: string;
 }
 
+export interface MenuTreeItem extends MenuItem {
+  children?: MenuTreeItem[];
+  hasChildren?: boolean;
+}
+
+export const buildMenuTree = (list: MenuItem[]): MenuTreeItem[] => {
+  const map = new Map<number, MenuTreeItem>();
+  const roots: MenuTreeItem[] = [];
+
+  list.forEach((item) => {
+    map.set(item.id, { ...item, children: [] });
+  });
+
+  list.forEach((item) => {
+    const treeItem = map.get(item.id)!;
+    if (item.parentId === null || item.parentId === undefined) {
+      roots.push(treeItem);
+    } else {
+      const parent = map.get(item.parentId);
+      if (parent) {
+        if (!parent.children) parent.children = [];
+        parent.children.push(treeItem);
+        parent.hasChildren = true;
+      }
+    }
+  });
+
+  const sortChildren = (items: MenuTreeItem[]) => {
+    items.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+    items.forEach((item) => {
+      if (item.children && item.children.length > 0) {
+        sortChildren(item.children);
+      }
+    });
+  };
+
+  sortChildren(roots);
+  return roots;
+};
+
 export interface MenuListParams {
   systemId?: number;
   keyword?: string;
