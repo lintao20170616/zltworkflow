@@ -152,13 +152,6 @@
           </div>
         </div>
         <div class="feature-item">
-          <el-icon class="feature-icon"><chat-dot-round /></el-icon>
-          <div class="feature-content">
-            <h3>智能对话</h3>
-            <p>集成 Ollama AI 模型，提供智能对话功能，支持本地 AI 模型调用</p>
-          </div>
-        </div>
-        <div class="feature-item">
           <el-icon class="feature-icon"><data-analysis /></el-icon>
           <div class="feature-content">
             <h3>数据统计</h3>
@@ -173,7 +166,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Setting, User, UserFilled, Avatar, Refresh, Menu, Lock, ChatDotRound, DataAnalysis, Document } from '@element-plus/icons-vue';
+import { Setting, User, UserFilled, Avatar, Refresh, Menu, Lock, DataAnalysis, Document } from '@element-plus/icons-vue';
 import { getUserList, type UserListItem } from '@app/service/auth';
 import { getSystemList, type SystemItem } from '@app/service/system';
 import { getSourceTextCount, getWeeklyTaskCount } from '@app/service/translation';

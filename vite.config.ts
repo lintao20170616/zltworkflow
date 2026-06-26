@@ -44,7 +44,7 @@ export default defineConfig({
     },
   ],
   root: resolve(__dirname, 'client/spa/apps/default'),
-  base: '/public/',
+  base: '/',
   build: {
     outDir: resolve(__dirname, 'app/public'),
     emptyOutDir: false,

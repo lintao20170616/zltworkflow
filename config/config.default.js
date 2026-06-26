@@ -54,7 +54,6 @@ module.exports = (appInfo) => {
       '/api/user/login',
       '/api/user/register',
       '/api/user/logout',
-      '/api/chatbot/test-ollama',
       '/api/translation/push-default-json',
       '/api/translation/pullTranslations',
       '/healthCheck.html',

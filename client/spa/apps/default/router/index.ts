@@ -28,12 +28,6 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true },
       },
       {
-        path: 'chatbot',
-        name: 'ChatBot',
-        component: () => import('../views/chatbot/index.vue'),
-        meta: { requiresAuth: true },
-      },
-      {
         path: 'system',
         name: 'SystemManage',
         component: () => import('../views/system/manage.vue'),

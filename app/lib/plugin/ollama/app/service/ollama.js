@@ -1,3 +1,5 @@
+'use strict';
+
 const { Service } = require('egg');
 const { Ollama } = require('ollama');
 const axios = require('axios');
@@ -691,18 +693,23 @@ class OllamaService extends Service {
           return false;
         }
 
-        await deepseekClient.get('/v1/models');
-        return true;
-      } catch (error) {
+        const response = await deepseekClient.post('/chat/completions', {
+          model: deepseekConfig.model || 'deepseek-chat',
+          messages: [{ role: 'user', content: 'hello' }],
+          max_tokens: 10,
+        });
+
+        return response && response.data && response.data.choices && response.data.choices.length > 0;
+      } catch {
         return false;
       }
     }
 
     try {
       const client = this.getClient();
-      await client.list();
-      return true;
-    } catch (error) {
+      const models = await client.list();
+      return models && Array.isArray(models.models);
+    } catch {
       return false;
     }
   }

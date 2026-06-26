@@ -22,14 +22,6 @@ module.exports = (app) => {
   router.delete('/api/menu/:id', controller.menu.delete);
   router.patch('/api/menu/:id/status', controller.menu.updateStatus);
 
-  // 聊天机器人接口
-  router.post('/api/chatbot/send', controller.chatbot.sendMessage);
-  router.get('/api/chatbot/conversations', controller.chatbot.getConversations);
-  router.get('/api/chatbot/messages/:conversationId', controller.chatbot.getMessages);
-  router.post('/api/chatbot/conversations', controller.chatbot.createConversation);
-  router.delete('/api/chatbot/conversations/:id', controller.chatbot.deleteConversation);
-  router.get('/api/chatbot/test-ollama', controller.chatbot.testOllama);
-
   // 语言管理接口
   router.get('/api/language/list', controller.language.list);
   router.post('/api/language', controller.language.create);

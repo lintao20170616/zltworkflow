@@ -20,13 +20,6 @@
         "name": "UserInfo"
       },
       {
-        "id": "chatbot",
-        "title": "聊天机器人",
-        "icon": "ChatLineRound",
-        "path": "/layout/chatbot",
-        "name": "ChatBot"
-      },
-      {
         "id": "system-manage",
         "title": "系统管理",
         "icon": "Setting",
